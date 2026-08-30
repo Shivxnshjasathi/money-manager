@@ -48,6 +48,7 @@ export default function More() {
 
   const menuItems: Array<{ icon: any; label: string; subtitle?: string; onClick: () => void }> = [
     { icon: Target, label: 'Manage Budgets', onClick: () => navigate('/budgets') },
+    { icon: Target, label: 'Savings Goals', onClick: () => navigate('/goals') },
     { icon: Download, label: 'Export to CSV', onClick: handleExportCSV },
     { icon: Filter, label: 'Filter Transactions', onClick: () => setShowFilterDrawer(true) },
     { icon: theme === 'dark' ? Sun : Moon, label: theme === 'dark' ? 'Light Theme' : 'Dark Theme', onClick: toggleTheme },

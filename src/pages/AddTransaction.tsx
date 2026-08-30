@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Star, Camera } from 'lucide-react';
+import { ChevronLeft, Star, Camera, X } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { format } from 'date-fns';
 import Drawer from '../components/Drawer';
@@ -21,7 +21,9 @@ export default function AddTransaction() {
   const [toAccount, setToAccount] = useState('');
   const [note, setNote] = useState('');
   const [description, setDescription] = useState('');
-  const [fee, setFee] = useState('');
+  const [attachment, setAttachment] = useState<string | undefined>(undefined);
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [frequency, setFrequency] = useState<'daily'|'weekly'|'monthly'|'yearly'>('monthly');
   const [showCatPicker, setShowCatPicker] = useState(false);
   const [showAccPicker, setShowAccPicker] = useState(false);
   const [showToAccPicker, setShowToAccPicker] = useState(false);
@@ -44,12 +46,74 @@ export default function AddTransaction() {
     setSelectedCategory('');
     setNote('');
     setDescription('');
-    setFee('');
+    setAttachment(undefined);
+    setIsRecurring(false);
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 800;
+        const MAX_HEIGHT = 800;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+        setAttachment(canvas.toDataURL('image/jpeg', 0.6)); // Compress to 60% quality jpeg
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSave = async (andContinue: boolean = false) => {
     const numAmount = Number(amount);
     if (!numAmount || numAmount <= 0) return;
+
+    let recurringId: string | undefined = undefined;
+
+    if (isRecurring) {
+      recurringId = uuidv4();
+      
+      const nextRun = new Date(date);
+      if (frequency === 'daily') nextRun.setDate(nextRun.getDate() + 1);
+      else if (frequency === 'weekly') nextRun.setDate(nextRun.getDate() + 7);
+      else if (frequency === 'monthly') nextRun.setMonth(nextRun.getMonth() + 1);
+      else if (frequency === 'yearly') nextRun.setFullYear(nextRun.getFullYear() + 1);
+
+      await db.recurring_transactions.add({
+        id: recurringId,
+        type,
+        amount: numAmount,
+        categoryId: type === 'transfer' ? '' : selectedCategory,
+        accountId: selectedAccount,
+        toAccountId: type === 'transfer' ? toAccount : undefined,
+        note,
+        description,
+        frequency,
+        startDate: new Date(date).toISOString(),
+        nextRunDate: nextRun.toISOString()
+      });
+    }
 
     if (type === 'transfer') {
       if (!selectedAccount || !toAccount) return;
@@ -63,8 +127,8 @@ export default function AddTransaction() {
         toAccountId: toAccount,
         note,
         description,
-        isRecurring: false,
-        fee: Number(fee) || 0,
+        attachment,
+        recurringId,
       });
     } else {
       if (!selectedCategory || !selectedAccount) return;
@@ -77,8 +141,8 @@ export default function AddTransaction() {
         accountId: selectedAccount,
         note,
         description,
-        isRecurring: false,
-        fee: 0,
+        attachment,
+        recurringId,
       });
     }
 
@@ -203,21 +267,6 @@ export default function AddTransaction() {
           </button>
         )}
 
-        {/* Fee (transfer only) */}
-        {type === 'transfer' && (
-          <div className="flex items-center py-4 border-b border-border">
-            <span className="text-text-secondary text-sm w-20 shrink-0">Fee</span>
-            <input
-              type="number"
-              inputMode="decimal"
-              value={fee}
-              onChange={e => setFee(e.target.value)}
-              placeholder="0"
-              className="flex-1 bg-transparent text-sm outline-none placeholder:text-text-tertiary"
-            />
-          </div>
-        )}
-
         {/* Note */}
         <div className="flex items-center py-4 border-b border-border">
           <span className="text-text-secondary text-sm w-20 shrink-0">Note</span>
@@ -228,8 +277,27 @@ export default function AddTransaction() {
             placeholder="Add note"
             className="flex-1 bg-transparent text-sm outline-none placeholder:text-text-tertiary"
           />
-          <Camera size={20} className="text-text-tertiary ml-2 shrink-0" />
+          <label className="cursor-pointer ml-2 shrink-0">
+            <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+            <Camera size={20} className="text-text-tertiary hover:text-text-primary transition-colors" />
+          </label>
         </div>
+        
+        {/* Attachment Preview */}
+        {attachment && (
+          <div className="flex py-4 border-b border-border">
+            <span className="text-text-secondary text-sm w-20 shrink-0">Photo</span>
+            <div className="relative">
+              <img src={attachment} alt="Receipt preview" className="h-24 w-auto rounded-lg border border-border" />
+              <button 
+                onClick={() => setAttachment(undefined)} 
+                className="absolute -top-2 -right-2 bg-surface rounded-full p-1 border border-border text-text-secondary hover:text-text-primary"
+              >
+                <X size={14} /> 
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Description */}
         <div className="flex items-center py-4 border-b border-border">
@@ -242,21 +310,39 @@ export default function AddTransaction() {
             className="flex-1 bg-transparent text-sm outline-none placeholder:text-text-tertiary"
           />
         </div>
+
+        {/* Recurring */}
+        <div className="flex items-center py-4 border-b border-border justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-text-secondary text-sm w-20 shrink-0">Recurring</span>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" className="sr-only peer" checked={isRecurring} onChange={e => setIsRecurring(e.target.checked)} />
+              <div className="w-11 h-6 bg-surface peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-coral border border-border"></div>
+            </label>
+          </div>
+          
+          {isRecurring && (
+            <select
+              value={frequency}
+              onChange={e => setFrequency(e.target.value as any)}
+              className="bg-elevated text-sm px-3 py-1.5 rounded-lg outline-none border border-border"
+            >
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+              <option value="yearly">Yearly</option>
+            </select>
+          )}
+        </div>
       </div>
 
       {/* Action Buttons */}
-      <div className="flex gap-3 p-4 bg-elevated shrink-0 pb-[calc(16px+env(safe-area-inset-bottom))]">
+      <div className="p-4 bg-elevated shrink-0 pb-[calc(16px+env(safe-area-inset-bottom))]">
         <button
           onClick={() => handleSave(false)}
-          className={`flex-[2] py-4 rounded-xl font-semibold text-white transition-all active:scale-[0.98] ${activeBgClass}`}
+          className={`w-full py-4 rounded-xl font-semibold text-white transition-all active:scale-[0.98] ${activeBgClass}`}
         >
           Save
-        </button>
-        <button
-          onClick={() => handleSave(true)}
-          className="flex-1 py-4 rounded-xl font-semibold border border-border text-text-primary transition-all active:scale-[0.98]"
-        >
-          Continue
         </button>
       </div>
 

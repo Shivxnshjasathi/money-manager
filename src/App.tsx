@@ -7,8 +7,9 @@ import AccountDetails from './pages/AccountDetails';
 import AddTransaction from './pages/AddTransaction';
 import More from './pages/More';
 import Budgets from './pages/Budgets';
+import Goals from './pages/Goals';
 import BottomNav from './components/BottomNav';
-import { seedDatabase } from './db';
+import { seedDatabase, processRecurringTransactions } from './db';
 import { useTheme } from './hooks';
 import './index.css';
 
@@ -17,8 +18,8 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   const hideNav = location.pathname === '/add' || location.pathname.startsWith('/accounts/');
 
   return (
-    <div className="flex flex-col h-full">
-      <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
+    <div className="flex flex-col h-dvh bg-bg text-text-primary overflow-hidden">
+      <main className="flex-1 overflow-hidden relative">
         {children}
       </main>
       {!hideNav && <BottomNav />}
@@ -31,7 +32,9 @@ function App() {
   const theme = useTheme((state) => state.theme);
 
   useEffect(() => {
-    seedDatabase().then(() => setReady(true));
+    seedDatabase()
+      .then(() => processRecurringTransactions())
+      .then(() => setReady(true));
   }, []);
 
   useEffect(() => {
@@ -69,6 +72,7 @@ function App() {
           <Route path="/accounts/:id" element={<AccountDetails />} />
           <Route path="/more" element={<More />} />
           <Route path="/budgets" element={<Budgets />} />
+          <Route path="/goals" element={<Goals />} />
           <Route path="/add" element={<AddTransaction />} />
         </Routes>
       </AppLayout>

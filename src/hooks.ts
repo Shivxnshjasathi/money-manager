@@ -20,6 +20,10 @@ export const useTheme = create<ThemeState>((set) => ({
   }),
 }));
 
+export function useGoals() {
+  return useLiveQuery(() => db.goals.toArray(), []) ?? [];
+}
+
 export function useTransactions(monthDate?: Date) {
   const allTx = useLiveQuery(() => db.transactions.toArray(), []) ?? [];
 
@@ -75,7 +79,7 @@ export function useAccountBalances() {
         }
         if (tx.type === 'transfer') {
           if (tx.accountId === account.id) {
-            balance -= tx.amount + (tx.fee || 0);
+            balance -= tx.amount;
           }
           if (tx.toAccountId === account.id) {
             balance += tx.amount;

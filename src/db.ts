@@ -1,9 +1,9 @@
 import Dexie, { type Table } from 'dexie';
 import { v4 as uuidv4 } from 'uuid';
-import type { ITransaction, IAccount, ICategory, IBudget } from './types';
+import type { ITransaction, IAccount, ICategory, IBudget, IGoal, IRecurringTransaction } from './types';
 
 // Re-export types for convenience
-export type { ITransaction, IAccount, ICategory, IBudget, TransactionType, AccountGroup } from './types';
+export type { ITransaction, IAccount, ICategory, IBudget, IGoal, IRecurringTransaction, TransactionType, AccountGroup } from './types';
 
 // ── Database ──────────────────────────────────────
 class MoneyDB extends Dexie {
@@ -11,6 +11,8 @@ class MoneyDB extends Dexie {
   accounts!: Table<IAccount, string>;
   categories!: Table<ICategory, string>;
   budgets!: Table<IBudget, string>;
+  goals!: Table<IGoal, string>;
+  recurring_transactions!: Table<IRecurringTransaction, string>;
 
   constructor() {
     super('MoneyManagerDB');
@@ -29,6 +31,15 @@ class MoneyDB extends Dexie {
     // Version 3: Add budgets
     this.version(3).stores({
       budgets: 'id, categoryId, yearMonth'
+    });
+
+    // Version 4: Add attachments, goals, and recurring transactions
+    this.version(4).stores({
+      transactions: 'id, type, date, category, accountId, toAccountId, recurringId', // added recurringId for index
+      goals: 'id, name, deadline', // currentAmount, targetAmount etc are not indexed usually unless we need to query by them
+      recurring_transactions: 'id, type, categoryId, accountId, frequency, nextRunDate'
+    }).upgrade(() => {
+      // no data migration needed for added tables
     });
   }
 }
@@ -65,6 +76,49 @@ export async function seedDatabase() {
     const allCats = [...DEFAULT_EXPENSE_CATEGORIES, ...DEFAULT_INCOME_CATEGORIES]
       .map(c => ({ ...c, id: uuidv4() }));
     await db.categories.bulkAdd(allCats);
+  }
+}
+
+// ── Process Recurring Transactions ──────────────────────
+export async function processRecurringTransactions() {
+  const recurring = await db.recurring_transactions.toArray();
+  const now = new Date();
+  
+  for (const rt of recurring) {
+    let nextRun = new Date(rt.nextRunDate);
+    let updated = false;
+
+    // While nextRun is in the past or present, generate transactions
+    while (nextRun <= now) {
+      await db.transactions.add({
+        id: uuidv4(),
+        type: rt.type,
+        amount: rt.amount,
+        date: nextRun.toISOString(),
+        category: rt.categoryId,
+        accountId: rt.accountId,
+        toAccountId: rt.toAccountId,
+        note: rt.note,
+        description: rt.description,
+        recurringId: rt.id,
+      });
+
+      // Increment nextRun based on frequency
+      if (rt.frequency === 'daily') {
+        nextRun.setDate(nextRun.getDate() + 1);
+      } else if (rt.frequency === 'weekly') {
+        nextRun.setDate(nextRun.getDate() + 7);
+      } else if (rt.frequency === 'monthly') {
+        nextRun.setMonth(nextRun.getMonth() + 1);
+      } else if (rt.frequency === 'yearly') {
+        nextRun.setFullYear(nextRun.getFullYear() + 1);
+      }
+      updated = true;
+    }
+
+    if (updated) {
+      await db.recurring_transactions.update(rt.id, { nextRunDate: nextRun.toISOString() });
+    }
   }
 }
 

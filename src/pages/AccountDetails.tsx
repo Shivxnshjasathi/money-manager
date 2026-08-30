@@ -24,6 +24,29 @@ export default function AccountDetails() {
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [allTransactions, id]);
 
+  const runningBalances = useMemo(() => {
+    if (!account) return {};
+    const balances: Record<string, number> = {};
+    let currentBalance = account.balance;
+    
+    // accountTransactions is sorted descending (newest first). 
+    // We need ascending to compute running balances from start.
+    const sortedAsc = [...accountTransactions].reverse();
+    
+    sortedAsc.forEach(tx => {
+      if (tx.type === 'income' && tx.accountId === id) {
+        currentBalance += tx.amount;
+      } else if (tx.type === 'expense' && tx.accountId === id) {
+        currentBalance -= tx.amount;
+      } else if (tx.type === 'transfer') {
+        if (tx.accountId === id) currentBalance -= tx.amount;
+        if (tx.toAccountId === id) currentBalance += tx.amount;
+      }
+      balances[tx.id] = currentBalance;
+    });
+    return balances;
+  }, [accountTransactions, account, id]);
+
   // Calculate Income and Expense just for this account
   const { income, expense } = useMemo(() => {
     let inc = 0;
@@ -38,7 +61,7 @@ export default function AccountDetails() {
       }
       if (tx.type === 'transfer') {
         if (tx.accountId === id) {
-          exp += tx.amount + (tx.fee || 0); // Outgoing transfer is like an expense from this account's perspective
+          exp += tx.amount; // Outgoing transfer is like an expense from this account's perspective
         }
         if (tx.toAccountId === id) {
           inc += tx.amount; // Incoming transfer is like income
@@ -121,6 +144,7 @@ export default function AccountDetails() {
                     transaction={tx}
                     categories={categories}
                     accounts={accounts}
+                    runningBalance={runningBalances[tx.id]}
                   />
                   <button
                     onClick={() => handleDeleteTx(tx.id)}

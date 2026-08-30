@@ -60,6 +60,31 @@ export default function TransactionsList() {
     }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [allTransactions, searchQuery, categories, accounts]);
 
+  // Compute running balances for all transactions sorted ascending
+  const runningBalances = useMemo(() => {
+    const balances: Record<string, number> = {};
+    accounts.forEach(a => { balances[a.id] = a.balance; }); // Initial balances
+    const txMap: Record<string, number> = {};
+    
+    // Sort all transactions ascending to compute running balances chronologically
+    const sorted = [...allTransactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    
+    sorted.forEach(tx => {
+      if (tx.type === 'income') {
+        balances[tx.accountId] = (balances[tx.accountId] || 0) + tx.amount;
+      } else if (tx.type === 'expense') {
+        balances[tx.accountId] = (balances[tx.accountId] || 0) - tx.amount;
+      } else if (tx.type === 'transfer') {
+        balances[tx.accountId] = (balances[tx.accountId] || 0) - tx.amount;
+        if (tx.toAccountId) {
+           balances[tx.toAccountId] = (balances[tx.toAccountId] || 0) + tx.amount;
+        }
+      }
+      txMap[tx.id] = balances[tx.accountId] || 0; 
+    });
+    return txMap;
+  }, [allTransactions, accounts]);
+
   // Aggregate for topbar
   const { totalIncome, totalExpense } = useMemo(() => {
     let inc = 0, exp = 0;
@@ -147,6 +172,7 @@ export default function TransactionsList() {
                     transaction={tx}
                     categories={categories}
                     accounts={accounts}
+                    runningBalance={runningBalances[tx.id]}
                   />
                   <button
                     onClick={() => handleDeleteTx(tx.id)}
@@ -221,6 +247,7 @@ export default function TransactionsList() {
                         transaction={tx}
                         categories={categories}
                         accounts={accounts}
+                        runningBalance={runningBalances[tx.id]}
                       />
                       <button
                         onClick={() => handleDeleteTx(tx.id)}
