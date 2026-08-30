@@ -1,0 +1,66 @@
+import { useEffect, useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import TransactionsList from './pages/TransactionsList';
+import Stats from './pages/Stats';
+import Accounts from './pages/Accounts';
+import AccountDetails from './pages/AccountDetails';
+import AddTransaction from './pages/AddTransaction';
+import More from './pages/More';
+import Budgets from './pages/Budgets';
+import BottomNav from './components/BottomNav';
+import { seedDatabase } from './db';
+import './index.css';
+
+function AppLayout({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+  const hideNav = location.pathname === '/add' || location.pathname.startsWith('/accounts/');
+
+  return (
+    <div className="flex flex-col h-full">
+      <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        {children}
+      </main>
+      {!hideNav && <BottomNav />}
+    </div>
+  );
+}
+
+function App() {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    seedDatabase().then(() => setReady(true));
+  }, []);
+
+  if (!ready) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-bg">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-12 h-12 rounded-xl bg-coral flex items-center justify-center text-white text-2xl font-bold animate-pulse">
+            ₹
+          </div>
+          <span className="text-text-secondary text-sm">Loading…</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <BrowserRouter>
+      <AppLayout>
+        <Routes>
+          <Route path="/" element={<Navigate to="/transactions" replace />} />
+          <Route path="/transactions" element={<TransactionsList />} />
+          <Route path="/stats" element={<Stats />} />
+          <Route path="/accounts" element={<Accounts />} />
+          <Route path="/accounts/:id" element={<AccountDetails />} />
+          <Route path="/more" element={<More />} />
+          <Route path="/budgets" element={<Budgets />} />
+          <Route path="/add" element={<AddTransaction />} />
+        </Routes>
+      </AppLayout>
+    </BrowserRouter>
+  );
+}
+
+export default App;
