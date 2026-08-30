@@ -2,7 +2,6 @@ import { useState, useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { format, addMonths, subMonths } from 'date-fns';
 import TopBar from '../components/TopBar';
-import Tabs from '../components/Tabs';
 import { useTransactions, useCategories, formatINR } from '../hooks';
 
 const COLORS = [
@@ -125,7 +124,7 @@ export default function Stats() {
                       ))}
                     </Pie>
                     <Tooltip
-                      formatter={(value: number) => formatINR(value)}
+                      formatter={(value: any) => formatINR(Number(value))}
                       contentStyle={{
                         backgroundColor: '#2C2C2E',
                         border: 'none',

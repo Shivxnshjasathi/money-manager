@@ -9,6 +9,7 @@ import More from './pages/More';
 import Budgets from './pages/Budgets';
 import BottomNav from './components/BottomNav';
 import { seedDatabase } from './db';
+import { useTheme } from './hooks';
 import './index.css';
 
 function AppLayout({ children }: { children: React.ReactNode }) {
@@ -27,10 +28,22 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 
 function App() {
   const [ready, setReady] = useState(false);
+  const theme = useTheme((state) => state.theme);
 
   useEffect(() => {
     seedDatabase().then(() => setReady(true));
   }, []);
+
+  useEffect(() => {
+    const metaThemeColor = document.getElementById('meta-theme-color');
+    if (theme === 'light') {
+      document.documentElement.classList.add('light');
+      if (metaThemeColor) metaThemeColor.setAttribute('content', '#F2F2F7');
+    } else {
+      document.documentElement.classList.remove('light');
+      if (metaThemeColor) metaThemeColor.setAttribute('content', '#121214');
+    }
+  }, [theme]);
 
   if (!ready) {
     return (

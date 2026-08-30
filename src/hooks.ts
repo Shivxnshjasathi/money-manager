@@ -2,6 +2,23 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from './db';
 import type { ICategory, IAccount } from './types';
 import { useMemo } from 'react';
+import { create } from 'zustand';
+
+type Theme = 'dark' | 'light';
+
+interface ThemeState {
+  theme: Theme;
+  toggleTheme: () => void;
+}
+
+export const useTheme = create<ThemeState>((set) => ({
+  theme: (localStorage.getItem('theme') as Theme) || 'dark',
+  toggleTheme: () => set((state) => {
+    const newTheme = state.theme === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('theme', newTheme);
+    return { theme: newTheme };
+  }),
+}));
 
 export function useTransactions(monthDate?: Date) {
   const allTx = useLiveQuery(() => db.transactions.toArray(), []) ?? [];

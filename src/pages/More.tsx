@@ -1,15 +1,16 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings, Download, Filter, Moon, Bell, ShieldCheck, ChevronRight, Target } from 'lucide-react';
+import { Settings, Download, Filter, Moon, Sun, Bell, ShieldCheck, ChevronRight, Target } from 'lucide-react';
 import Drawer from '../components/Drawer';
-import { db, resetAllData } from '../db';
-import { useAllTransactions, useAccounts, useCategories, formatINR } from '../hooks';
+import { resetAllData } from '../db';
+import { useAllTransactions, useAccounts, useCategories, useTheme } from '../hooks';
 
 export default function More() {
   const [showFilterDrawer, setShowFilterDrawer] = useState(false);
   const transactions = useAllTransactions();
   const accounts = useAccounts();
   const categories = useCategories();
+  const { theme, toggleTheme } = useTheme();
 
   // Export to CSV
   const handleExportCSV = useCallback(() => {
@@ -45,11 +46,11 @@ export default function More() {
 
   const navigate = useNavigate();
 
-  const menuItems = [
+  const menuItems: Array<{ icon: any; label: string; subtitle?: string; onClick: () => void }> = [
     { icon: Target, label: 'Manage Budgets', onClick: () => navigate('/budgets') },
     { icon: Download, label: 'Export to CSV', onClick: handleExportCSV },
     { icon: Filter, label: 'Filter Transactions', onClick: () => setShowFilterDrawer(true) },
-    { icon: Moon, label: 'Dark Theme', subtitle: 'Always On', onClick: () => {} },
+    { icon: theme === 'dark' ? Sun : Moon, label: theme === 'dark' ? 'Light Theme' : 'Dark Theme', onClick: toggleTheme },
     { icon: Bell, label: 'Notifications', onClick: () => {} },
     { icon: ShieldCheck, label: 'Privacy & Security', onClick: () => {} },
   ];

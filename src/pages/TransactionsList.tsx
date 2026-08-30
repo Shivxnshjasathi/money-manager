@@ -7,7 +7,7 @@ import TransactionItem from '../components/TransactionItem';
 import CalendarView from '../components/CalendarView';
 import Drawer from '../components/Drawer';
 import { useTransactions, useAccounts, useCategories, useAllTransactions, formatINR, getCategoryById, getAccountById } from '../hooks';
-import { db, deleteTransaction } from '../db';
+import { deleteTransaction } from '../db';
 import type { ITransaction } from '../types';
 
 const VIEW_TABS = ['Daily', 'Calendar', 'Monthly', 'Summary', 'Description'];

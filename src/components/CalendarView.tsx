@@ -1,10 +1,6 @@
 import { useMemo } from 'react';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, isToday, startOfWeek, endOfWeek } from 'date-fns';
 import type { ITransaction, ICategory, IAccount } from '../types';
-import { formatINR, getCategoryById, getAccountById } from '../hooks';
-import {
-  startOfMonth, endOfMonth, startOfWeek, endOfWeek,
-  eachDayOfInterval, format, isSameMonth, isSameDay, isToday,
-} from 'date-fns';
 
 interface Props {
   transactions: ITransaction[];
@@ -15,7 +11,7 @@ interface Props {
   onSelectDate: (date: Date) => void;
 }
 
-export default function CalendarView({ transactions, categories, accounts, monthDate, selectedDate, onSelectDate }: Props) {
+export default function CalendarView({ transactions, monthDate, selectedDate, onSelectDate }: Props) {
   const days = useMemo(() => {
     const monthStart = startOfMonth(monthDate);
     const monthEnd = endOfMonth(monthDate);

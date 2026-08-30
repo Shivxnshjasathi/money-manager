@@ -1,18 +1,48 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg: #121214;
-  --color-surface: #1C1C1E;
-  --color-elevated: #2C2C2E;
-  --color-border: #38383A;
-  --color-text-primary: #FFFFFF;
-  --color-text-secondary: #8E8E93;
-  --color-text-tertiary: #636366;
-  --color-coral: #FF5A5F;
-  --color-income: #4E9FDF;
-  --color-expense: #E05353;
-  --color-transfer: #98989D;
+  --color-bg: var(--app-bg);
+  --color-surface: var(--app-surface);
+  --color-elevated: var(--app-elevated);
+  --color-border: var(--app-border);
+  --color-text-primary: var(--app-text-primary);
+  --color-text-secondary: var(--app-text-secondary);
+  --color-text-tertiary: var(--app-text-tertiary);
+  --color-coral: var(--app-coral);
+  --color-income: var(--app-income);
+  --color-expense: var(--app-expense);
+  --color-transfer: var(--app-transfer);
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+@layer base {
+  :root {
+    --app-bg: #121214;
+    --app-surface: #1C1C1E;
+    --app-elevated: #2C2C2E;
+    --app-border: #38383A;
+    --app-text-primary: #FFFFFF;
+    --app-text-secondary: #8E8E93;
+    --app-text-tertiary: #636366;
+    --app-coral: #FF5A5F;
+    --app-income: #4E9FDF;
+    --app-expense: #E05353;
+    --app-transfer: #98989D;
+  }
+
+  :root.light {
+    --app-bg: #F2F2F7;
+    --app-surface: #FFFFFF;
+    --app-elevated: #E5E5EA;
+    --app-border: #D1D1D6;
+    --app-text-primary: #000000;
+    --app-text-secondary: #8E8E93;
+    --app-text-tertiary: #AEAEB2;
+    --app-coral: #FF3B30;
+    --app-income: #007AFF;
+    --app-expense: #FF3B30;
+    --app-transfer: #8E8E93;
+  }
 }
 
 * {
