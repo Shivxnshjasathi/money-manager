@@ -2,6 +2,8 @@ import type { ITransaction, ICategory, IAccount } from '../types';
 import { formatINR, getCategoryById, getAccountById } from '../hooks';
 import { Paperclip } from 'lucide-react';
 
+import { motion, type Variants } from 'framer-motion';
+
 interface Props {
   transaction: ITransaction;
   categories: ICategory[];
@@ -9,6 +11,15 @@ interface Props {
   runningBalance?: number;
   onClick?: () => void;
 }
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 10 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { type: 'spring', stiffness: 300, damping: 24 }
+  }
+};
 
 export default function TransactionItem({ transaction: tx, categories, accounts, runningBalance, onClick }: Props) {
   const isTransfer = tx.type === 'transfer';
@@ -23,19 +34,24 @@ export default function TransactionItem({ transaction: tx, categories, accounts,
   const prefix = tx.type === 'income' ? '+' : tx.type === 'expense' ? '-' : '';
 
   return (
-    <button
+    <motion.button
+      variants={itemVariants}
+      layout
+      initial="hidden"
+      animate="visible"
+      whileTap={{ scale: 0.98 }}
       onClick={onClick}
-      className="flex items-center justify-between w-full px-4 py-3 border-b border-border/50 active:bg-elevated/50 transition-colors"
+      className="flex items-center justify-between w-full px-4 py-3 border-b border-border/50 transition-colors bg-surface hover:bg-elevated/50"
     >
       <div className="flex items-center gap-3 flex-1 min-w-0">
         {/* Icon */}
-        <div className="w-9 h-9 rounded-full bg-elevated flex items-center justify-center text-lg shrink-0">
+        <div className="w-9 h-9 rounded-full bg-elevated flex items-center justify-center text-lg shrink-0 shadow-sm border border-border/50">
           {isTransfer ? '🔄' : cat?.icon ?? '📝'}
         </div>
 
         {/* Info */}
         <div className="flex flex-col items-start min-w-0 flex-1 pr-2">
-          <span className="text-[15px] font-medium truncate w-full text-left">
+          <span className="text-[15px] font-semibold truncate w-full text-left tracking-tight">
             {isTransfer ? 'Transfer' : cat?.name ?? 'Unknown'}
           </span>
           <div className="flex items-center text-xs text-text-secondary w-full">
@@ -50,15 +66,15 @@ export default function TransactionItem({ transaction: tx, categories, accounts,
 
       {/* Amount */}
       <div className="flex flex-col items-end shrink-0 ml-2">
-        <span className={`${amountColor} font-semibold text-[15px]`}>
+        <span className={`${amountColor} font-bold text-[15px] tracking-tight`}>
           {prefix}{formatINR(tx.amount)}
         </span>
         {runningBalance !== undefined && (
-          <span className="text-[10px] text-text-tertiary mt-0.5">
+          <span className="text-[10px] text-text-tertiary mt-0.5 font-medium">
             {formatINR(runningBalance)}
           </span>
         )}
       </div>
-    </button>
+    </motion.button>
   );
 }

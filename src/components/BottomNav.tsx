@@ -1,5 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { CalendarDays, PieChart, Wallet, MoreHorizontal, Plus } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const navItems = [
   { to: '/transactions', icon: CalendarDays, label: 'Trans.' },
@@ -12,7 +13,7 @@ export default function BottomNav() {
   const navigate = useNavigate();
 
   return (
-    <nav className="relative flex items-end bg-surface border-t border-border pb-[env(safe-area-inset-bottom)]">
+    <nav className="relative flex items-end bg-surface/85 backdrop-blur-xl border-t border-border/50 pb-[env(safe-area-inset-bottom)] z-20">
       {navItems.map((item, idx) => (
         <NavLink
           key={item.to}
@@ -23,21 +24,36 @@ export default function BottomNav() {
             ${isActive ? 'text-coral' : 'text-text-secondary hover:text-text-primary'}`
           }
         >
-          <item.icon size={22} strokeWidth={1.8} />
-          <span className="text-[11px] font-medium">{item.label}</span>
+          {({ isActive }) => (
+            <motion.div 
+              whileTap={{ scale: 0.85 }}
+              animate={isActive ? { y: -2 } : { y: 0 }}
+              className="flex flex-col items-center gap-0.5"
+            >
+              <item.icon size={22} strokeWidth={1.8} />
+              <span className="text-[11px] font-medium">{item.label}</span>
+              {isActive && (
+                <motion.div 
+                  layoutId="bottom-nav-indicator"
+                  className="w-1 h-1 bg-coral rounded-full mt-0.5"
+                />
+              )}
+            </motion.div>
+          )}
         </NavLink>
       ))}
 
       {/* FAB */}
-      <button
+      <motion.button
+        whileTap={{ scale: 0.9 }}
+        whileHover={{ scale: 1.05 }}
         onClick={() => navigate('/add')}
         className="absolute left-1/2 -translate-x-1/2 -top-7 w-14 h-14 rounded-full bg-coral text-white
-                   flex items-center justify-center shadow-[0_4px_16px_rgba(255,90,95,0.45)]
-                   active:scale-95 transition-transform duration-150"
+                   flex items-center justify-center shadow-[0_4px_16px_rgba(255,90,95,0.45)]"
         aria-label="Add transaction"
       >
         <Plus size={28} strokeWidth={2.5} />
-      </button>
+      </motion.button>
     </nav>
   );
 }

@@ -5,6 +5,26 @@ import { v4 as uuidv4 } from 'uuid';
 import Drawer from '../components/Drawer';
 import { db } from '../db';
 import { useGoals, formatINR } from '../hooks';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
+
+const listVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.08 }
+  }
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 15, scale: 0.95 },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    scale: 1,
+    transition: { type: 'spring', stiffness: 300, damping: 24 }
+  },
+  exit: { opacity: 0, scale: 0.9, transition: { duration: 0.2 } }
+};
 
 export default function Goals() {
   const navigate = useNavigate();
@@ -53,73 +73,87 @@ export default function Goals() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-20">
+      <motion.div 
+        variants={listVariants} 
+        initial="hidden" 
+        animate="visible"
+        className="flex-1 overflow-y-auto p-4 space-y-4"
+      >
         {goals.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-text-secondary text-sm pt-20">
-            <Target size={48} className="mb-4 text-border" />
-            <p>No savings goals yet.</p>
-            <button 
-              onClick={() => setShowAddDrawer(true)}
-              className="mt-4 px-6 py-2 bg-elevated rounded-xl text-text-primary active:bg-coral/20 transition-colors"
-            >
-              Create a Goal
-            </button>
+          <div className="flex flex-col items-center justify-center h-40 text-text-secondary text-sm gap-2">
+            <Target size={40} className="text-border" />
+            <span>No goals yet. Start saving!</span>
           </div>
         ) : (
-          goals.map(goal => {
-            const progress = Math.min((goal.currentAmount / goal.targetAmount) * 100, 100);
-            return (
-              <div key={goal.id} className="bg-surface rounded-2xl p-5 border border-border">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="font-semibold text-lg">{goal.name}</h3>
-                    <p className="text-text-secondary text-sm mt-1">
-                      {formatINR(goal.currentAmount)} of {formatINR(goal.targetAmount)}
-                    </p>
-                  </div>
-                  <button onClick={() => handleDelete(goal.id)} className="p-2 text-text-tertiary hover:text-expense transition-colors">
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-
-                <div className="h-3 w-full bg-elevated rounded-full overflow-hidden mb-3">
-                  <div 
-                    className="h-full transition-all duration-500 rounded-full"
-                    style={{ width: `${progress}%`, backgroundColor: goal.color }}
-                  />
-                </div>
-                <div className="flex justify-between items-center text-xs text-text-secondary font-medium">
-                  <span>{progress.toFixed(0)}%</span>
-                  <span>Left: {formatINR(goal.targetAmount - goal.currentAmount)}</span>
-                </div>
-                
-                <button 
-                  onClick={() => {
-                    const amount = prompt(`Add funds to ${goal.name} (₹):`);
-                    const num = Number(amount);
-                    if (num && num > 0) {
-                      db.goals.update(goal.id, { currentAmount: goal.currentAmount + num });
-                      db.transactions.add({
-                        id: uuidv4(),
-                        type: 'expense',
-                        amount: num,
-                        date: new Date().toISOString(),
-                        category: 'goal', // Special category
-                        accountId: 'goal-contribution', // Special account
-                        note: `Contribution to ${goal.name}`,
-                        description: '',
-                      });
-                    }
-                  }}
-                  className="mt-4 w-full py-2 bg-elevated rounded-lg text-sm font-medium active:bg-border transition-colors"
+          <AnimatePresence>
+            {goals.map(goal => {
+              const progress = Math.min((goal.currentAmount / goal.targetAmount) * 100, 100);
+              
+              return (
+                <motion.div 
+                  key={goal.id} 
+                  variants={itemVariants}
+                  layout
+                  exit="exit"
+                  className="bg-surface rounded-2xl p-5 border border-border shadow-sm"
                 >
-                  Add Funds
-                </button>
-              </div>
-            );
-          })
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 className="font-semibold text-lg">{goal.name}</h3>
+                      <p className="text-xs text-text-secondary mt-1">
+                        {formatINR(goal.currentAmount)} of {formatINR(goal.targetAmount)}
+                      </p>
+                    </div>
+                    <button 
+                      onClick={() => handleDelete(goal.id)}
+                      className="p-2 text-text-tertiary hover:text-expense transition-colors"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+
+                  <div className="relative h-2 bg-elevated rounded-full overflow-hidden">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${progress}%` }}
+                      transition={{ duration: 1, ease: 'easeOut' }}
+                      className="absolute top-0 left-0 h-full rounded-full transition-all"
+                      style={{ backgroundColor: goal.color || '#0ABDE3' }}
+                    />
+                  </div>
+                  <div className="mt-2 text-right text-[10px] text-text-tertiary font-medium">
+                    {progress.toFixed(1)}%
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      const amt = prompt('How much to add?');
+                      if (amt && !isNaN(Number(amt))) {
+                        db.goals.update(goal.id, {
+                          currentAmount: goal.currentAmount + Number(amt)
+                        });
+                        db.transactions.add({
+                          id: uuidv4(),
+                          amount: Number(amt),
+                          type: 'expense',
+                          date: new Date().toISOString(),
+                          category: 'goal',
+                          accountId: 'cash',
+                          note: `Contribution to ${goal.name}`,
+                          description: '',
+                        });
+                      }
+                    }}
+                    className="mt-4 w-full py-2 bg-elevated rounded-lg text-sm font-medium active:scale-95 transition-all"
+                  >
+                    Add Funds
+                  </button>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
         )}
-      </div>
+      </motion.div>
 
       {/* Add Goal Drawer */}
       <Drawer open={showAddDrawer} onClose={() => setShowAddDrawer(false)} title="New Goal">

@@ -13,6 +13,9 @@ import { seedDatabase, processRecurringTransactions } from './db';
 import { useTheme } from './hooks';
 import './index.css';
 
+import { AnimatePresence } from 'framer-motion';
+import PageTransition from './components/PageTransition';
+
 function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const hideNav = location.pathname === '/add' || location.pathname.startsWith('/accounts/');
@@ -24,6 +27,25 @@ function AppLayout({ children }: { children: React.ReactNode }) {
       </main>
       {!hideNav && <BottomNav />}
     </div>
+  );
+}
+
+function AppRoutes() {
+  const location = useLocation();
+  return (
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route path="/" element={<Navigate to="/transactions" replace />} />
+        <Route path="/transactions" element={<PageTransition><TransactionsList /></PageTransition>} />
+        <Route path="/stats" element={<PageTransition><Stats /></PageTransition>} />
+        <Route path="/accounts" element={<PageTransition><Accounts /></PageTransition>} />
+        <Route path="/accounts/:id" element={<PageTransition><AccountDetails /></PageTransition>} />
+        <Route path="/more" element={<PageTransition><More /></PageTransition>} />
+        <Route path="/budgets" element={<PageTransition><Budgets /></PageTransition>} />
+        <Route path="/goals" element={<PageTransition><Goals /></PageTransition>} />
+        <Route path="/add" element={<PageTransition><AddTransaction /></PageTransition>} />
+      </Routes>
+    </AnimatePresence>
   );
 }
 
@@ -64,17 +86,7 @@ function App() {
   return (
     <BrowserRouter>
       <AppLayout>
-        <Routes>
-          <Route path="/" element={<Navigate to="/transactions" replace />} />
-          <Route path="/transactions" element={<TransactionsList />} />
-          <Route path="/stats" element={<Stats />} />
-          <Route path="/accounts" element={<Accounts />} />
-          <Route path="/accounts/:id" element={<AccountDetails />} />
-          <Route path="/more" element={<More />} />
-          <Route path="/budgets" element={<Budgets />} />
-          <Route path="/goals" element={<Goals />} />
-          <Route path="/add" element={<AddTransaction />} />
-        </Routes>
+        <AppRoutes />
       </AppLayout>
     </BrowserRouter>
   );

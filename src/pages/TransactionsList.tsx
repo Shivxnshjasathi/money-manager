@@ -9,8 +9,19 @@ import Drawer from '../components/Drawer';
 import { useTransactions, useAccounts, useCategories, useAllTransactions, formatINR, getCategoryById, getAccountById } from '../hooks';
 import { deleteTransaction } from '../db';
 import type { ITransaction } from '../types';
+import { motion, type Variants } from 'framer-motion';
 
 const VIEW_TABS = ['Daily', 'Calendar', 'Monthly', 'Summary', 'Description'];
+
+const listVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05
+    }
+  }
+};
 
 export default function TransactionsList() {
   const [monthDate, setMonthDate] = useState(new Date());
@@ -166,22 +177,24 @@ export default function TransactionsList() {
               <div className="px-4 py-2 text-xs text-text-tertiary">
                 {searchResults.length} result{searchResults.length !== 1 ? 's' : ''}
               </div>
-              {searchResults.map(tx => (
-                <div key={tx.id} className="relative group">
-                  <TransactionItem
-                    transaction={tx}
-                    categories={categories}
-                    accounts={accounts}
-                    runningBalance={runningBalances[tx.id]}
-                  />
-                  <button
-                    onClick={() => handleDeleteTx(tx.id)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-expense/60 hover:text-expense transition-colors"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              ))}
+              <motion.div variants={listVariants} initial="hidden" animate="visible">
+                {searchResults.map(tx => (
+                  <div key={tx.id} className="relative group">
+                    <TransactionItem
+                      transaction={tx}
+                      categories={categories}
+                      accounts={accounts}
+                      runningBalance={runningBalances[tx.id]}
+                    />
+                    <button
+                      onClick={() => handleDeleteTx(tx.id)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-expense/60 hover:text-expense transition-colors"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))}
+              </motion.div>
             </>
           )}
         </div>
@@ -241,22 +254,24 @@ export default function TransactionsList() {
                   </div>
 
                   {/* Transactions with swipe-to-delete */}
-                  {txs.map(tx => (
-                    <div key={tx.id} className="relative group">
-                      <TransactionItem
-                        transaction={tx}
-                        categories={categories}
-                        accounts={accounts}
-                        runningBalance={runningBalances[tx.id]}
-                      />
-                      <button
-                        onClick={() => handleDeleteTx(tx.id)}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-expense/0 group-hover:text-expense/60 hover:!text-expense transition-all"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  ))}
+                  <motion.div variants={listVariants} initial="hidden" animate="visible">
+                    {txs.map(tx => (
+                      <div key={tx.id} className="relative group">
+                        <TransactionItem
+                          transaction={tx}
+                          categories={categories}
+                          accounts={accounts}
+                          runningBalance={runningBalances[tx.id]}
+                        />
+                        <button
+                          onClick={() => handleDeleteTx(tx.id)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-expense/0 group-hover:text-expense/60 hover:!text-expense transition-all"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </motion.div>
                 </div>
               );
             })}

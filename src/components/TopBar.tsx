@@ -19,7 +19,7 @@ export default function TopBar({
   const total = income - expense;
 
   return (
-    <div className="bg-bg pt-[env(safe-area-inset-top)] shrink-0">
+    <div className="bg-bg/85 backdrop-blur-xl pt-[env(safe-area-inset-top)] shrink-0 z-10 sticky top-0">
       {/* Title row */}
       <div className="flex items-center justify-between px-4 h-12">
         <div className="w-10 flex items-center">

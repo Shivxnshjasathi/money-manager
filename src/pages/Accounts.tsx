@@ -6,6 +6,24 @@ import Drawer from '../components/Drawer';
 import { db } from '../db';
 import type { AccountGroup } from '../types';
 import { useAccountBalances, formatINR } from '../hooks';
+import { motion, type Variants } from 'framer-motion';
+
+const listVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.05 }
+  }
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 10 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { type: 'spring', stiffness: 300, damping: 24 }
+  }
+};
 
 const ACCOUNT_GROUPS_ORDER: AccountGroup[] = [
   'Cash', 'Bank Accounts', 'Card', 'Debit Card', 'Savings',
@@ -89,39 +107,44 @@ export default function Accounts() {
             <span className="text-xs text-text-tertiary">Tap + to add your first account</span>
           </div>
         )}
-        {ACCOUNT_GROUPS_ORDER.filter(g => grouped[g]?.length).map(group => {
-          const accs = grouped[group];
-          const groupTotal = accs.reduce((s, a) => s + a.computedBalance, 0);
+        <motion.div variants={listVariants} initial="hidden" animate="visible">
+          {ACCOUNT_GROUPS_ORDER.filter(g => grouped[g]?.length).map(group => {
+            const accs = grouped[group];
+            const groupTotal = accs.reduce((s, a) => s + a.computedBalance, 0);
 
-          return (
-            <div key={group} className="mt-3">
-              {/* Group Header */}
-              <div className="flex items-center justify-between px-4 py-2.5 bg-surface border-y border-border">
-                <span className="text-sm font-medium text-text-secondary">{group}</span>
-                <span className={`text-sm font-medium ${groupTotal >= 0 ? 'text-income' : 'text-expense'}`}>
-                  {formatINR(groupTotal)}
-                </span>
+            return (
+              <div key={group} className="mt-3">
+                {/* Group Header */}
+                <div className="flex items-center justify-between px-4 py-2.5 bg-surface border-y border-border">
+                  <span className="text-sm font-medium text-text-secondary">{group}</span>
+                  <span className={`text-sm font-medium ${groupTotal >= 0 ? 'text-income' : 'text-expense'}`}>
+                    {formatINR(groupTotal)}
+                  </span>
+                </div>
+
+                {/* Accounts */}
+                {accs.map(acc => (
+                  <motion.button
+                    variants={itemVariants}
+                    layout
+                    whileTap={{ scale: 0.98 }}
+                    key={acc.id}
+                    onClick={() => navigate(`/accounts/${acc.id}`)}
+                    className="flex items-center justify-between w-full px-4 py-3.5 border-b border-border/50 bg-surface hover:bg-elevated/50 transition-colors"
+                  >
+                    <span className="text-[15px] font-medium tracking-tight">{acc.name}</span>
+                    <div className="flex items-center gap-1">
+                      <span className={`font-semibold tracking-tight text-[15px] ${acc.computedBalance >= 0 ? 'text-income' : 'text-expense'}`}>
+                        {formatINR(acc.computedBalance)}
+                      </span>
+                      <ChevronRight size={16} className="text-text-tertiary" />
+                    </div>
+                  </motion.button>
+                ))}
               </div>
-
-              {/* Accounts */}
-              {accs.map(acc => (
-                <button
-                  key={acc.id}
-                  onClick={() => navigate(`/accounts/${acc.id}`)}
-                  className="flex items-center justify-between w-full px-4 py-3.5 border-b border-border/50 active:bg-elevated/50 transition-colors"
-                >
-                  <span className="text-[15px]">{acc.name}</span>
-                  <div className="flex items-center gap-1">
-                    <span className={`font-semibold text-[15px] ${acc.computedBalance >= 0 ? 'text-income' : 'text-expense'}`}>
-                      {formatINR(acc.computedBalance)}
-                    </span>
-                    <ChevronRight size={16} className="text-text-tertiary" />
-                  </div>
-                </button>
-              ))}
-            </div>
-          );
-        })}
+            );
+          })}
+        </motion.div>
       </div>
 
       {/* Add Account Drawer */}
