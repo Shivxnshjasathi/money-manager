@@ -13,47 +13,56 @@ export default function BottomNav() {
   const navigate = useNavigate();
 
   return (
-    <nav className="relative flex items-end bg-surface/85 backdrop-blur-xl border-t border-border/50 pb-[env(safe-area-inset-bottom)] z-20">
-      {navItems.map((item, idx) => (
-        <NavLink
-          key={item.to}
-          to={item.to}
-          className={({ isActive }) =>
-            `flex-1 flex flex-col items-center gap-0.5 py-2 transition-colors duration-200
-            ${idx === 1 ? 'mr-8' : ''} ${idx === 2 ? 'ml-8' : ''}
-            ${isActive ? 'text-coral' : 'text-text-secondary hover:text-text-primary'}`
-          }
-        >
-          {({ isActive }) => (
-            <motion.div 
-              whileTap={{ scale: 0.85 }}
-              animate={isActive ? { y: -2 } : { y: 0 }}
-              className="flex flex-col items-center gap-0.5"
-            >
-              <item.icon size={22} strokeWidth={1.8} />
-              <span className="text-[11px] font-medium">{item.label}</span>
-              {isActive && (
-                <motion.div 
-                  layoutId="bottom-nav-indicator"
-                  className="w-1 h-1 bg-coral rounded-full mt-0.5"
-                />
-              )}
-            </motion.div>
-          )}
-        </NavLink>
-      ))}
+    <div className="fixed bottom-4 left-5 right-5 pointer-events-none z-50">
+      <nav className="relative flex items-center justify-between px-4 h-12 bg-surface/95 backdrop-blur-3xl border border-border rounded-full shadow-[0_8px_32px_-4px_rgba(0,0,0,0.4)] pointer-events-auto max-w-md mx-auto">
+        {navItems.map((item, idx) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            className={({ isActive }) =>
+              `flex-1 flex flex-col items-center justify-center h-full transition-all duration-300
+              ${idx === 1 ? 'mr-10' : ''} ${idx === 2 ? 'ml-10' : ''}
+              ${isActive ? 'text-coral' : 'text-text-secondary hover:text-text-primary'}`
+            }
+          >
+            {({ isActive }) => (
+              <motion.div
+                whileTap={{ scale: 0.75, rotate: -8 }}
+                animate={isActive ? { y: -2, scale: 1.1 } : { y: 0, scale: 1 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                className="flex flex-col items-center justify-center relative w-full h-full"
+              >
+                <item.icon size={22} strokeWidth={isActive ? 2.5 : 1.8} />
+                {/* Active dot indicator */}
+                {isActive && (
+                  <motion.div 
+                    layoutId="nav-dot"
+                    className="absolute bottom-1.5 w-1 h-1 rounded-full bg-coral"
+                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                  />
+                )}
+              </motion.div>
+            )}
+          </NavLink>
+        ))}
 
-      {/* FAB */}
-      <motion.button
-        whileTap={{ scale: 0.9 }}
-        whileHover={{ scale: 1.05 }}
-        onClick={() => navigate('/add')}
-        className="absolute left-1/2 -translate-x-1/2 -top-7 w-14 h-14 rounded-full bg-coral text-white
-                   flex items-center justify-center shadow-[0_4px_16px_rgba(255,90,95,0.45)]"
-        aria-label="Add transaction"
-      >
-        <Plus size={28} strokeWidth={2.5} />
-      </motion.button>
-    </nav>
+        {/* FAB with glow */}
+        <div className="absolute left-1/2 -translate-x-1/2 -top-6 pointer-events-auto">
+          {/* Glow ring */}
+          <div className="absolute inset-0 rounded-full bg-coral/20 blur-xl scale-150 animate-pulse" />
+          <motion.button
+            whileTap={{ scale: 0.85, rotate: 45 }}
+            whileHover={{ scale: 1.1 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+            onClick={() => navigate('/add')}
+            className="relative w-[52px] h-[52px] rounded-full bg-coral text-bg
+                       flex items-center justify-center shadow-lg shadow-coral/30 border-[3px] border-bg"
+            aria-label="Add transaction"
+          >
+            <Plus size={28} strokeWidth={2.5} />
+          </motion.button>
+        </div>
+      </nav>
+    </div>
   );
 }

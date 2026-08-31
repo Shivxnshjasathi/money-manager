@@ -1,13 +1,29 @@
 import { useState, useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { format, addMonths, subMonths } from 'date-fns';
+import { motion, type Variants } from 'framer-motion';
 import TopBar from '../components/TopBar';
 import { useTransactions, useCategories, formatINR } from '../hooks';
 
-const COLORS = [
-  '#FF5A5F', '#FF9F43', '#FECA57', '#48DBFB', '#0ABDE3',
-  '#10AC84', '#EE5A24', '#A29BFE', '#FD79A8', '#636E72',
-];
+const listVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.08 }
+  }
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 15 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { type: 'spring', stiffness: 400, damping: 25 }
+  }
+};
+
+// Use dynamic opacity based on index instead of hardcoded colors
+const getSliceOpacity = (index: number) => Math.max(0.2, 1 - index * 0.15);
 
 export default function Stats() {
   const [monthDate, setMonthDate] = useState(new Date());
@@ -46,7 +62,7 @@ export default function Stats() {
           icon: cat?.icon ?? '📝',
           value: amount,
           percent: total > 0 ? (amount / total) * 100 : 0,
-          color: COLORS[i % COLORS.length],
+          opacity: getSliceOpacity(i),
         };
       })
       .sort((a, b) => b.value - a.value);
@@ -58,7 +74,7 @@ export default function Stats() {
   const budgetPercent = Math.min((budgetUsed / monthlyBudget) * 100, 100);
 
   return (
-    <div className="flex flex-col flex-1 min-h-0">
+    <div className="flex flex-col h-full w-full bg-bg">
       <TopBar
         title={format(monthDate, 'MMM yyyy')}
         onPrev={() => setMonthDate(d => subMonths(d, 1))}
@@ -75,7 +91,7 @@ export default function Stats() {
             key={tab}
             onClick={() => setMainTab(tab)}
             className={`px-5 py-1.5 rounded-full text-sm font-medium transition-all duration-200
-              ${mainTab === tab ? 'bg-coral text-white' : 'text-text-secondary hover:text-text-primary'}`}
+              ${mainTab === tab ? 'bg-coral text-bg' : 'text-text-secondary hover:text-text-primary'}`}
           >
             {tab}
           </button>
@@ -83,20 +99,18 @@ export default function Stats() {
       </div>
 
       {/* Income / Expense sub-tab */}
-      <div className="flex border-b border-border shrink-0">
+      <div className="flex px-4 py-2 gap-2 shrink-0 border-b border-border/50">
         <button
           onClick={() => setSubTab('Income')}
-          className={`flex-1 py-3 text-sm font-medium border-b-2 transition-all ${
-            subTab === 'Income' ? 'text-income border-income' : 'text-text-secondary border-transparent'
-          }`}
+          className={`flex-1 py-2 text-[13px] font-bold rounded-full transition-all duration-300 ${subTab === 'Income' ? 'bg-income text-bg shadow-lg shadow-black/10 scale-105' : 'bg-surface/50 text-text-secondary hover:bg-surface'
+            }`}
         >
           Income {formatINR(totalIncome)}
         </button>
         <button
           onClick={() => setSubTab('Expense')}
-          className={`flex-1 py-3 text-sm font-medium border-b-2 transition-all ${
-            subTab === 'Expense' ? 'text-expense border-expense' : 'text-text-secondary border-transparent'
-          }`}
+          className={`flex-1 py-2 text-[13px] font-bold rounded-full transition-all duration-300 ${subTab === 'Expense' ? 'bg-expense text-bg shadow-lg shadow-black/10 scale-105' : 'bg-surface/50 text-text-secondary hover:bg-surface'
+            }`}
         >
           Exp. {formatINR(totalExpense)}
         </button>
@@ -105,7 +119,13 @@ export default function Stats() {
       <div className="flex-1 overflow-y-auto">
         {/* ─── Stats View ─── */}
         {mainTab === 'Stats' && (
-          <div className="fade-in">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="flex flex-col"
+          >
             {/* Pie Chart */}
             <div className="h-64 bg-surface border-b border-border">
               {chartData.length > 0 ? (
@@ -120,7 +140,7 @@ export default function Stats() {
                       stroke="none"
                     >
                       {chartData.map((entry, index) => (
-                        <Cell key={index} fill={entry.color} />
+                        <Cell key={index} fill="var(--app-text-primary)" fillOpacity={entry.opacity} />
                       ))}
                     </Pie>
                     <Tooltip
@@ -143,75 +163,96 @@ export default function Stats() {
             </div>
 
             {/* Category Breakdown */}
-            <div className="p-4 space-y-3">
+            <motion.div 
+              variants={listVariants}
+              initial="hidden"
+              animate="visible"
+              className="p-4 space-y-3"
+            >
               {chartData.map(item => (
-                <div key={item.id} className="flex items-center gap-3">
+                <motion.div 
+                  key={item.id} 
+                  variants={itemVariants}
+                  className="flex items-center gap-3 bg-surface/50 p-3 rounded-2xl border border-border/30 backdrop-blur-sm"
+                >
                   {/* Color bar */}
-                  <div className="w-1 h-8 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+                  <div className="w-1 h-8 rounded-full shrink-0 bg-text-primary" style={{ opacity: item.opacity }} />
                   {/* Percent */}
-                  <span className="text-sm font-bold w-12 text-right" style={{ color: item.color }}>
+                  <span className="text-sm font-bold w-12 text-right text-text-primary" style={{ opacity: item.opacity }}>
                     {item.percent.toFixed(1)}%
                   </span>
                   {/* Icon + Name */}
                   <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <span className="text-lg">{item.icon}</span>
-                    <span className="text-sm font-medium truncate">{item.name}</span>
+                    <span className="text-xl">{item.icon}</span>
+                    <span className="text-[15px] font-medium truncate tracking-tight">{item.name}</span>
                   </div>
                   {/* Amount */}
-                  <span className="text-sm font-semibold shrink-0">{formatINR(item.value)}</span>
-                </div>
+                  <span className="text-[15px] font-bold shrink-0 tracking-tight">{formatINR(item.value)}</span>
+                </motion.div>
               ))}
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         )}
 
         {/* ─── Budget View ─── */}
         {mainTab === 'Budget' && (
-          <div className="fade-in p-4 space-y-4">
-            <div className="bg-surface rounded-xl p-4 border border-border">
-              <div className="flex justify-between mb-3">
-                <span className="text-sm font-medium">Monthly Budget</span>
-                <span className="text-sm text-text-secondary">{formatINR(monthlyBudget)}</span>
+          <motion.div 
+            variants={listVariants}
+            initial="hidden"
+            animate="visible"
+            className="p-4 space-y-4"
+          >
+            <motion.div variants={itemVariants} className="bg-surface/80 rounded-[24px] p-5 border border-border shadow-sm">
+              <div className="flex justify-between mb-4">
+                <span className="text-[15px] font-medium text-text-secondary">Monthly Budget</span>
+                <span className="text-[15px] font-bold">{formatINR(monthlyBudget)}</span>
               </div>
-              
+
               {/* Progress bar */}
-              <div className="h-3 bg-elevated rounded-full overflow-hidden mb-2">
-                <div
-                  className={`h-full rounded-full transition-all duration-500 ${
-                    budgetPercent > 80 ? 'bg-expense' : budgetPercent > 50 ? 'bg-[#FF9F43]' : 'bg-income'
-                  }`}
-                  style={{ width: `${budgetPercent}%` }}
+              <div className="h-4 bg-elevated rounded-full overflow-hidden mb-3 p-0.5 border border-white/5">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${budgetPercent}%` }}
+                  transition={{ type: 'spring', stiffness: 50, damping: 15, delay: 0.2 }}
+                  className={`h-full rounded-full shadow-sm ${budgetPercent > 80 ? 'bg-expense' : budgetPercent > 50 ? 'bg-transfer' : 'bg-income'
+                    }`}
                 />
               </div>
 
-              <div className="flex justify-between text-xs">
-                <span className="text-text-secondary">Spent: <span className="text-expense font-medium">{formatINR(budgetUsed)}</span></span>
+              <div className="flex justify-between text-[13px]">
+                <span className="text-text-secondary">Spent: <span className="text-expense font-bold">{formatINR(budgetUsed)}</span></span>
                 <span className="text-text-secondary">
-                  Remaining: <span className="text-income font-medium">{formatINR(Math.max(0, monthlyBudget - budgetUsed))}</span>
+                  Left: <span className="text-income font-bold">{formatINR(Math.max(0, monthlyBudget - budgetUsed))}</span>
                 </span>
               </div>
-            </div>
+            </motion.div>
 
             {/* Per-category budgets */}
             {chartData.map(item => {
               const catBudget = monthlyBudget / chartData.length;
               const catPercent = Math.min((item.value / catBudget) * 100, 100);
               return (
-                <div key={item.id} className="bg-surface rounded-xl p-3 border border-border">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span>{item.icon}</span>
-                      <span className="text-sm">{item.name}</span>
+                <motion.div key={item.id} variants={itemVariants} className="bg-surface/50 rounded-2xl p-4 border border-border/50">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl">{item.icon}</span>
+                      <span className="text-[15px] font-medium">{item.name}</span>
                     </div>
-                    <span className="text-xs text-text-secondary">{formatINR(item.value)}</span>
+                    <span className="text-[14px] font-bold text-text-secondary">{formatINR(item.value)}</span>
                   </div>
-                  <div className="h-2 bg-elevated rounded-full overflow-hidden">
-                    <div className="h-full rounded-full" style={{ width: `${catPercent}%`, backgroundColor: item.color }} />
+                  <div className="h-2.5 bg-elevated rounded-full overflow-hidden">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${catPercent}%` }}
+                      transition={{ type: 'spring', stiffness: 50, damping: 15, delay: 0.3 }}
+                      className="h-full rounded-full bg-text-primary" 
+                      style={{ opacity: item.opacity }} 
+                    />
                   </div>
-                </div>
+                </motion.div>
               );
             })}
-          </div>
+          </motion.div>
         )}
 
         {/* ─── Note View ─── */}

@@ -38,6 +38,8 @@ export default function Accounts() {
   const [newGroup, setNewGroup] = useState<AccountGroup>('Bank Accounts');
   const [newBalance, setNewBalance] = useState('');
 
+  const isAccountValid = newName.trim().length > 0 && !isNaN(parseFloat(newBalance));
+
   // Group accounts
   const grouped = accountsWithBalances.reduce<Record<string, typeof accountsWithBalances>>((acc, item) => {
     (acc[item.group] ??= []).push(item);
@@ -68,16 +70,16 @@ export default function Accounts() {
   };
 
   return (
-    <div className="flex flex-col flex-1 min-h-0">
+    <div className="flex flex-col h-full w-full bg-bg">
       {/* Header */}
       <div className="bg-bg pt-[env(safe-area-inset-top)] shrink-0">
         <div className="flex items-center justify-between px-4 h-12">
           <span className="text-lg font-semibold">Accounts</span>
           <button
             onClick={() => setShowAddDrawer(true)}
-            className="w-8 h-8 rounded-full bg-coral flex items-center justify-center active:scale-95 transition-transform"
+            className="w-8 h-8 rounded-full bg-coral text-bg flex items-center justify-center active:scale-95 transition-transform"
           >
-            <Plus size={18} className="text-white" />
+            <Plus size={18} />
           </button>
         </div>
 
@@ -99,7 +101,7 @@ export default function Accounts() {
       </div>
 
       {/* Account Groups */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto px-4 pt-2">
         {accountsWithBalances.length === 0 && (
           <div className="flex flex-col items-center justify-center h-64 text-text-secondary text-sm gap-2">
             <span className="text-4xl">🏦</span>
@@ -113,34 +115,36 @@ export default function Accounts() {
             const groupTotal = accs.reduce((s, a) => s + a.computedBalance, 0);
 
             return (
-              <div key={group} className="mt-3">
+              <div key={group} className="mt-4 bg-surface/60 backdrop-blur-xl border border-white/10 dark:border-white/5 rounded-[24px] overflow-hidden shadow-xl shadow-black/5">
                 {/* Group Header */}
-                <div className="flex items-center justify-between px-4 py-2.5 bg-surface border-y border-border">
-                  <span className="text-sm font-medium text-text-secondary">{group}</span>
-                  <span className={`text-sm font-medium ${groupTotal >= 0 ? 'text-income' : 'text-expense'}`}>
+                <div className="flex items-center justify-between px-6 py-4 bg-black/5 dark:bg-white/5 border-b border-white/5">
+                  <span className="text-sm font-bold text-text-primary tracking-wide">{group}</span>
+                  <span className={`text-sm font-bold ${groupTotal >= 0 ? 'text-income' : 'text-expense'}`}>
                     {formatINR(groupTotal)}
                   </span>
                 </div>
 
                 {/* Accounts */}
-                {accs.map(acc => (
-                  <motion.button
-                    variants={itemVariants}
-                    layout
-                    whileTap={{ scale: 0.98 }}
-                    key={acc.id}
-                    onClick={() => navigate(`/accounts/${acc.id}`)}
-                    className="flex items-center justify-between w-full px-4 py-3.5 border-b border-border/50 bg-surface hover:bg-elevated/50 transition-colors"
-                  >
-                    <span className="text-[15px] font-medium tracking-tight">{acc.name}</span>
-                    <div className="flex items-center gap-1">
-                      <span className={`font-semibold tracking-tight text-[15px] ${acc.computedBalance >= 0 ? 'text-income' : 'text-expense'}`}>
-                        {formatINR(acc.computedBalance)}
-                      </span>
-                      <ChevronRight size={16} className="text-text-tertiary" />
-                    </div>
-                  </motion.button>
-                ))}
+                <div className="flex flex-col py-2">
+                  {accs.map(acc => (
+                    <motion.button
+                      variants={itemVariants}
+                      layout
+                      whileTap={{ scale: 0.98 }}
+                      key={acc.id}
+                      onClick={() => navigate(`/accounts/${acc.id}`)}
+                      className="flex items-center justify-between w-full px-6 py-3.5 transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                    >
+                      <span className="text-[15px] font-semibold tracking-tight">{acc.name}</span>
+                      <div className="flex items-center gap-2">
+                        <span className={`font-bold tracking-tight text-[15px] ${acc.computedBalance >= 0 ? 'text-income' : 'text-expense'}`}>
+                          {formatINR(acc.computedBalance)}
+                        </span>
+                        <ChevronRight size={16} className="text-text-tertiary" />
+                      </div>
+                    </motion.button>
+                  ))}
+                </div>
               </div>
             );
           })}
@@ -151,23 +155,22 @@ export default function Accounts() {
       <Drawer open={showAddDrawer} onClose={() => setShowAddDrawer(false)} title="New Account">
         <div className="p-4 space-y-4">
           <div>
-            <label className="text-xs text-text-secondary mb-1 block">Account Name</label>
+            <label className="text-[11px] font-bold text-text-secondary ml-1 uppercase tracking-wider block mb-1.5">Account Name</label>
             <input
               type="text"
               value={newName}
               onChange={e => setNewName(e.target.value)}
               placeholder="e.g. HDFC"
-              className="w-full bg-elevated rounded-xl px-4 py-3 text-sm outline-none border border-border
-                         focus:border-coral transition-colors placeholder:text-text-tertiary"
+              className="input-premium"
             />
           </div>
 
           <div>
-            <label className="text-xs text-text-secondary mb-1 block">Account Group</label>
+            <label className="text-[11px] font-bold text-text-secondary ml-1 uppercase tracking-wider block mb-1.5">Account Group</label>
             <select
               value={newGroup}
               onChange={e => setNewGroup(e.target.value as AccountGroup)}
-              className="w-full bg-elevated rounded-xl px-4 py-3 text-sm outline-none border border-border"
+              className="input-premium"
             >
               {ACCOUNT_GROUPS_ORDER.map(g => (
                 <option key={g} value={g}>{g}</option>
@@ -176,21 +179,24 @@ export default function Accounts() {
           </div>
 
           <div>
-            <label className="text-xs text-text-secondary mb-1 block">Initial Balance</label>
-            <input
-              type="number"
-              inputMode="decimal"
-              value={newBalance}
-              onChange={e => setNewBalance(e.target.value)}
-              placeholder="0"
-              className="w-full bg-elevated rounded-xl px-4 py-3 text-sm outline-none border border-border
-                         focus:border-coral transition-colors placeholder:text-text-tertiary"
-            />
+            <label className="text-[11px] font-bold text-text-secondary ml-1 uppercase tracking-wider block mb-1.5">Initial Balance</label>
+            <div className="input-premium-wrapper">
+              <span className="text-lg font-bold text-text-secondary mr-2">₹</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={newBalance}
+                onChange={e => setNewBalance(e.target.value)}
+                placeholder="0"
+                className="font-semibold text-lg"
+              />
+            </div>
           </div>
 
           <button
             onClick={handleAddAccount}
-            className="w-full bg-coral text-white py-4 rounded-xl font-semibold active:scale-[0.98] transition-transform"
+            disabled={!isAccountValid}
+            className="w-full bg-coral text-bg py-4 rounded-xl font-semibold active:scale-[0.98] transition-transform disabled:opacity-50 disabled:active:scale-100"
           >
             Add Account
           </button>

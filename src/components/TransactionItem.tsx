@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import type { ITransaction, ICategory, IAccount } from '../types';
 import { formatINR, getCategoryById, getAccountById } from '../hooks';
 import { Paperclip } from 'lucide-react';
@@ -10,6 +11,7 @@ interface Props {
   accounts: IAccount[];
   runningBalance?: number;
   onClick?: () => void;
+  onLongPress?: () => void;
 }
 
 const itemVariants: Variants = {
@@ -21,7 +23,7 @@ const itemVariants: Variants = {
   }
 };
 
-export default function TransactionItem({ transaction: tx, categories, accounts, runningBalance, onClick }: Props) {
+export default function TransactionItem({ transaction: tx, categories, accounts, runningBalance, onClick, onLongPress }: Props) {
   const isTransfer = tx.type === 'transfer';
   const cat = !isTransfer ? getCategoryById(categories, tx.category) : undefined;
   const acc = getAccountById(accounts, tx.accountId);
@@ -33,6 +35,18 @@ export default function TransactionItem({ transaction: tx, categories, accounts,
 
   const prefix = tx.type === 'income' ? '+' : tx.type === 'expense' ? '-' : '';
 
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  
+  const handleTouchStart = () => {
+    timerRef.current = setTimeout(() => {
+      onLongPress?.();
+    }, 500);
+  };
+
+  const handleTouchEnd = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+  };
+
   return (
     <motion.button
       variants={itemVariants}
@@ -41,7 +55,13 @@ export default function TransactionItem({ transaction: tx, categories, accounts,
       animate="visible"
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
-      className="flex items-center justify-between w-full px-4 py-3 border-b border-border/50 transition-colors bg-surface hover:bg-elevated/50"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchMove={handleTouchEnd}
+      onMouseDown={handleTouchStart}
+      onMouseUp={handleTouchEnd}
+      onMouseLeave={handleTouchEnd}
+      className="flex items-center justify-between w-full p-4 rounded-[20px] border border-border shadow-sm transition-all bg-surface hover:bg-elevated hover:shadow-md"
     >
       <div className="flex items-center gap-3 flex-1 min-w-0">
         {/* Icon */}

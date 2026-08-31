@@ -32,9 +32,10 @@ export default function Goals() {
   const [showAddDrawer, setShowAddDrawer] = useState(false);
   const [name, setName] = useState('');
   const [targetAmount, setTargetAmount] = useState('');
-  const [color, setColor] = useState('#0ABDE3');
-
   const COLORS = ['#FF5A5F', '#FF9F43', '#FECA57', '#48DBFB', '#0ABDE3', '#10AC84', '#EE5A24', '#A29BFE', '#FD79A8'];
+  const [color, setColor] = useState(COLORS[0]);
+
+  const isGoalValid = name.trim().length > 0 && parseFloat(targetAmount) > 0;
 
   const handleSaveGoal = async () => {
     const numTarget = Number(targetAmount);
@@ -77,7 +78,7 @@ export default function Goals() {
         variants={listVariants} 
         initial="hidden" 
         animate="visible"
-        className="flex-1 overflow-y-auto p-4 space-y-4"
+        className="flex-1 overflow-y-auto px-4 space-y-4 pt-4"
       >
         {goals.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-40 text-text-secondary text-sm gap-2">
@@ -95,9 +96,15 @@ export default function Goals() {
                   variants={itemVariants}
                   layout
                   exit="exit"
-                  className="bg-surface rounded-2xl p-5 border border-border shadow-sm"
+                  className="relative overflow-hidden bg-surface/60 backdrop-blur-xl rounded-[24px] p-6 border border-white/10 dark:border-white/5 shadow-xl shadow-black/5"
                 >
-                  <div className="flex justify-between items-start mb-4">
+                  {/* Subtle color glow behind the card */}
+                  <div 
+                    className="absolute -top-10 -right-10 w-32 h-32 rounded-full blur-3xl opacity-20 pointer-events-none"
+                    style={{ backgroundColor: goal.color || '#0ABDE3' }}
+                  />
+
+                  <div className="relative flex justify-between items-start mb-6">
                     <div>
                       <h3 className="font-semibold text-lg">{goal.name}</h3>
                       <p className="text-xs text-text-secondary mt-1">
@@ -160,28 +167,31 @@ export default function Goals() {
         <div className="p-4 space-y-6">
           <div className="space-y-4">
             <div>
-              <label className="text-xs text-text-secondary mb-1 block">Goal Name</label>
+              <label className="text-[11px] font-bold text-text-secondary ml-1 uppercase tracking-wider block mb-1.5">Goal Name</label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g., Vacation to Bali"
-                className="w-full bg-elevated px-4 py-3 rounded-xl outline-none"
+                className="input-premium"
               />
             </div>
             <div>
-              <label className="text-xs text-text-secondary mb-1 block">Target Amount (₹)</label>
-              <input
-                type="number"
-                inputMode="decimal"
-                value={targetAmount}
-                onChange={(e) => setTargetAmount(e.target.value)}
-                placeholder="0"
-                className="w-full bg-elevated px-4 py-3 rounded-xl outline-none"
-              />
+              <label className="text-[11px] font-bold text-text-secondary ml-1 uppercase tracking-wider block mb-1.5">Target Amount</label>
+              <div className="input-premium-wrapper">
+                <span className="text-lg font-bold text-text-secondary mr-2">₹</span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  value={targetAmount}
+                  onChange={(e) => setTargetAmount(e.target.value)}
+                  placeholder="0"
+                  className="font-semibold text-lg"
+                />
+              </div>
             </div>
             <div>
-              <label className="text-xs text-text-secondary mb-2 block">Color</label>
+              <label className="text-[11px] font-bold text-text-secondary ml-1 uppercase tracking-wider block mb-1.5">Color</label>
               <div className="flex gap-2 flex-wrap">
                 {COLORS.map(c => (
                   <button
@@ -199,8 +209,8 @@ export default function Goals() {
           
           <button
             onClick={handleSaveGoal}
-            disabled={!name || !targetAmount}
-            className="w-full py-3.5 bg-coral text-white rounded-xl font-semibold active:scale-[0.98] transition-transform disabled:opacity-50"
+            disabled={!isGoalValid}
+            className="w-full py-4 bg-coral text-bg rounded-xl font-bold active:scale-[0.98] transition-all disabled:opacity-50 disabled:active:scale-100"
           >
             Create Goal
           </button>

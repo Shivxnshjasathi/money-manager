@@ -1,9 +1,28 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings, Download, Filter, Moon, Sun, Bell, ShieldCheck, ChevronRight, Target } from 'lucide-react';
+import { Settings, Filter, Moon, Sun, Bell, ShieldCheck, ChevronRight, PieChart, FileDown, Trash2, Footprints, ExternalLink } from 'lucide-react';
 import Drawer from '../components/Drawer';
 import { resetAllData } from '../db';
 import { useAllTransactions, useAccounts, useCategories, useTheme } from '../hooks';
+import { motion, type Variants } from 'framer-motion';
+
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.05 }
+  }
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 15, scale: 0.95 },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    scale: 1,
+    transition: { type: 'spring', stiffness: 400, damping: 25 }
+  }
+};
 
 export default function More() {
   const [showFilterDrawer, setShowFilterDrawer] = useState(false);
@@ -46,18 +65,19 @@ export default function More() {
 
   const navigate = useNavigate();
 
-  const menuItems: Array<{ icon: any; label: string; subtitle?: string; onClick: () => void }> = [
-    { icon: Target, label: 'Manage Budgets', onClick: () => navigate('/budgets') },
-    { icon: Target, label: 'Savings Goals', onClick: () => navigate('/goals') },
-    { icon: Download, label: 'Export to CSV', onClick: handleExportCSV },
+  const menuItems: Array<{ icon: any; label: string; onClick: () => void }> = [
+    { icon: PieChart, label: 'Manage Budgets', onClick: () => navigate('/budgets') },
+    { icon: Footprints, label: 'Savings Goals', onClick: () => navigate('/goals') },
+    { icon: FileDown, label: 'Export to CSV', onClick: handleExportCSV },
     { icon: Filter, label: 'Filter Transactions', onClick: () => setShowFilterDrawer(true) },
     { icon: theme === 'dark' ? Sun : Moon, label: theme === 'dark' ? 'Light Theme' : 'Dark Theme', onClick: toggleTheme },
-    { icon: Bell, label: 'Notifications', onClick: () => {} },
-    { icon: ShieldCheck, label: 'Privacy & Security', onClick: () => {} },
+    { icon: Bell, label: 'Notifications', onClick: () => navigate('/notifications') },
+    { icon: ShieldCheck, label: 'Privacy & Security', onClick: () => navigate('/privacy-security') },
+    { icon: ExternalLink, label: 'Schedule a Date (Weekstack App)', onClick: () => window.open('https://weekstack-web.vercel.app/', '_blank') },
   ];
 
   return (
-    <div className="flex flex-col flex-1 min-h-0">
+    <div className="flex flex-col h-full w-full bg-bg">
       {/* Header */}
       <div className="bg-bg pt-[env(safe-area-inset-top)] shrink-0">
         <div className="flex items-center px-4 h-12 gap-3">
@@ -68,49 +88,62 @@ export default function More() {
 
       <div className="flex-1 overflow-y-auto">
         {/* App Info Card */}
-        <div className="mx-4 mt-4 p-4 bg-surface rounded-2xl border border-border">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-12 h-12 rounded-xl bg-coral flex items-center justify-center text-white text-xl font-bold">
-              ₹
-            </div>
+        <div className="mx-4 mt-6 p-5 bg-surface/80 backdrop-blur-xl rounded-3xl border border-border/50 shadow-sm relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-coral/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none" />
+          <div className="flex items-center gap-4 mb-4 relative z-10">
             <div>
-              <h3 className="font-semibold">Money Manager</h3>
-              <p className="text-xs text-text-secondary">Track your finances offline</p>
+              <h3 className="text-xl font-bold tracking-tight">Manifest</h3>
+              <p className="text-[13px] text-text-secondary font-medium mt-0.5">Manifest your wealth</p>
             </div>
           </div>
-          <div className="flex gap-2 text-xs">
-            <span className="bg-elevated px-2 py-1 rounded-full text-text-secondary">
-              {transactions.length} transactions
-            </span>
-            <span className="bg-elevated px-2 py-1 rounded-full text-text-secondary">
-              {accounts.length} accounts
-            </span>
+          <div className="flex gap-3 relative z-10">
+            <div className="flex-1 bg-elevated/50 px-3 py-2 rounded-2xl border border-border/50 text-center">
+              <span className="block text-[15px] font-bold text-text-primary">{transactions.length}</span>
+              <span className="text-[10px] text-text-tertiary uppercase tracking-wider font-bold mt-0.5 block">Transactions</span>
+            </div>
+            <div className="flex-1 bg-elevated/50 px-3 py-2 rounded-2xl border border-border/50 text-center">
+              <span className="block text-[15px] font-bold text-text-primary">{accounts.length}</span>
+              <span className="text-[10px] text-text-tertiary uppercase tracking-wider font-bold mt-0.5 block">Accounts</span>
+            </div>
           </div>
+        </div>
+
+        <div className="px-4 mt-8 mb-2">
+          <span className="text-[11px] font-bold text-text-tertiary uppercase tracking-[0.2em] ml-1">Settings & Features</span>
         </div>
 
         {/* Menu Items */}
-        <div className="mt-4 mx-4 bg-surface rounded-2xl border border-border overflow-hidden">
+        <motion.div 
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="mx-4 bg-surface/50 rounded-3xl border border-border/50 shadow-sm overflow-hidden"
+        >
           {menuItems.map((item, idx) => (
-            <button
+            <motion.button
+              variants={itemVariants}
+              whileTap={{ scale: 0.98, backgroundColor: 'rgba(0,0,0,0.05)' }}
               key={item.label}
               onClick={item.onClick}
-              className={`flex items-center justify-between w-full px-4 py-3.5 active:bg-elevated/50 transition-colors
+              className={`flex items-center w-full px-5 py-4 transition-colors
                 ${idx < menuItems.length - 1 ? 'border-b border-border/50' : ''}`}
             >
-              <div className="flex items-center gap-3">
-                <item.icon size={20} className="text-text-secondary" />
-                <div className="text-left">
-                  <span className="text-sm">{item.label}</span>
-                  {item.subtitle && <p className="text-[11px] text-text-tertiary">{item.subtitle}</p>}
-                </div>
+              <div className="w-10 h-10 rounded-full bg-elevated flex items-center justify-center shrink-0 border border-border/50 mr-4 shadow-sm">
+                <item.icon size={18} className="text-text-primary" />
               </div>
-              <ChevronRight size={16} className="text-text-tertiary" />
-            </button>
+              <div className="text-left flex-1 min-w-0">
+                <span className="text-[15px] font-bold block">{item.label}</span>
+              </div>
+              <ChevronRight size={20} className="text-text-tertiary shrink-0 ml-2" />
+            </motion.button>
           ))}
-        </div>
+        </motion.div>
 
         {/* Danger zone */}
-        <div className="mt-4 mx-4 mb-8">
+        <div className="px-4 mt-8 mb-2">
+          <span className="text-[11px] font-bold text-text-tertiary uppercase tracking-[0.2em] ml-1">Danger Zone</span>
+        </div>
+        <div className="mx-4 mb-4">
           <button
             onClick={async () => {
               if (confirm('This will delete ALL your data and reset the app. Are you sure?')) {
@@ -118,10 +151,10 @@ export default function More() {
                 window.location.reload();
               }
             }}
-            className="w-full py-3 rounded-xl border border-expense/30 text-expense text-sm font-medium
-                       active:bg-expense/10 transition-colors"
+            className="w-full flex items-center justify-center gap-2 py-4 rounded-3xl border border-expense/20 bg-expense/5 text-expense font-bold active:bg-expense/10 transition-colors"
           >
-            Clear All Data
+            <Trash2 size={18} />
+            <span>Clear All Data</span>
           </button>
         </div>
       </div>
@@ -163,7 +196,7 @@ export default function More() {
             </div>
           </div>
 
-          <button className="w-full bg-coral text-white py-4 rounded-xl font-semibold active:scale-[0.98] transition-transform mt-2">
+          <button className="w-full bg-coral text-bg py-4 rounded-xl font-semibold active:scale-[0.98] transition-transform mt-2">
             Apply Filter
           </button>
         </div>

@@ -20,6 +20,8 @@ export default function Budgets() {
   const [selectedCategory, setSelectedCategory] = useState<string>('overall');
   const [amount, setAmount] = useState<string>('');
 
+  const isBudgetValid = parseFloat(amount) > 0 && !!selectedCategory;
+
   // Calculations
   const expenses = useMemo(() => transactions.filter(t => t.type === 'expense'), [transactions]);
   const totalSpent = expenses.reduce((sum, t) => sum + t.amount, 0);
@@ -127,7 +129,7 @@ export default function Budgets() {
   const expenseCategories = categories.filter(c => c.type === 'expense');
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 bg-bg">
+    <div className="flex flex-col h-full w-full bg-bg">
       <TopBar
         title={format(monthDate, 'MMM yyyy')}
         onPrev={handlePrev}
@@ -136,7 +138,7 @@ export default function Budgets() {
         expense={totalSpent}
       />
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 fade-in pb-8">
+      <div className="flex-1 overflow-y-auto px-4 space-y-4 fade-in">
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-lg font-bold">Budgets</h2>
           <button 
@@ -165,12 +167,12 @@ export default function Budgets() {
       {/* Add Budget Drawer */}
       <Drawer open={showAddDrawer} onClose={() => setShowAddDrawer(false)} title="Set Budget">
         <div className="p-4 space-y-4">
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-text-secondary uppercase">Budget Type</label>
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold text-text-secondary ml-1 uppercase tracking-wider block mb-1.5">Budget Type</label>
             <select
               value={selectedCategory}
               onChange={e => setSelectedCategory(e.target.value)}
-              className="w-full bg-elevated text-text-primary px-4 py-3 rounded-xl border border-transparent focus:border-coral outline-none appearance-none"
+              className="input-premium"
             >
               <option value="overall">🌍 Overall Budget</option>
               {expenseCategories.map(cat => (
@@ -179,17 +181,17 @@ export default function Budgets() {
             </select>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-text-secondary uppercase">Amount</label>
-            <div className="flex items-center bg-elevated rounded-xl px-4 py-3 focus-within:ring-1 focus-within:ring-coral">
-              <span className="text-text-secondary mr-2">₹</span>
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold text-text-secondary ml-1 uppercase tracking-wider block mb-1.5">Amount</label>
+            <div className="input-premium-wrapper">
+              <span className="text-lg font-bold text-text-secondary mr-2">₹</span>
               <input
                 type="number"
                 inputMode="decimal"
                 value={amount}
                 onChange={e => setAmount(e.target.value)}
                 placeholder="0.00"
-                className="flex-1 bg-transparent text-text-primary outline-none"
+                className="font-semibold text-lg"
                 autoFocus
               />
             </div>
@@ -197,9 +199,10 @@ export default function Budgets() {
 
           <button
             onClick={handleSaveBudget}
-            className="w-full bg-coral text-white font-semibold py-3.5 rounded-xl active:scale-[0.98] transition-transform mt-2"
+            disabled={!isBudgetValid}
+            className="w-full bg-coral text-bg py-4 rounded-xl font-bold active:scale-[0.98] transition-all disabled:opacity-50 disabled:active:scale-100"
           >
-            Save Budget
+            Set Budget
           </button>
         </div>
       </Drawer>

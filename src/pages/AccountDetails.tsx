@@ -1,14 +1,15 @@
+import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useMemo } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { useAccountBalances, useAllTransactions, useCategories, useAccounts, formatINR } from '../hooks';
 import TransactionItem from '../components/TransactionItem';
+import Drawer from '../components/Drawer';
 import { db } from '../db';
-import { Trash2 } from 'lucide-react';
 
 export default function AccountDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [txToDelete, setTxToDelete] = useState<string | null>(null);
   
   const accountsWithBalances = useAccountBalances();
   const allTransactions = useAllTransactions();
@@ -91,7 +92,7 @@ export default function AccountDetails() {
   }
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 bg-bg">
+    <div className="flex flex-col h-full w-full bg-bg">
       {/* Header */}
       <div className="flex items-center px-4 h-14 pt-[env(safe-area-inset-top)] bg-surface border-b border-border shrink-0 sticky top-0 z-10">
         <button onClick={() => navigate('/accounts')} className="p-2 -ml-2 text-text-primary active:scale-95 transition-transform">
@@ -137,27 +138,41 @@ export default function AccountDetails() {
               No transactions found
             </div>
           ) : (
-            <div className="bg-surface rounded-xl border border-border overflow-hidden">
+            <div className="space-y-3">
               {accountTransactions.map(tx => (
-                <div key={tx.id} className="relative group border-b border-border/50 last:border-0">
-                  <TransactionItem
-                    transaction={tx}
-                    categories={categories}
-                    accounts={accounts}
-                    runningBalance={runningBalances[tx.id]}
-                  />
-                  <button
-                    onClick={() => handleDeleteTx(tx.id)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-expense/60 hover:text-expense transition-colors"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
+                <TransactionItem
+                  key={tx.id}
+                  transaction={tx}
+                  categories={categories}
+                  accounts={accounts}
+                  runningBalance={runningBalances[tx.id]}
+                  onLongPress={() => setTxToDelete(tx.id)}
+                />
               ))}
             </div>
           )}
         </div>
       </div>
+      {/* ─── Delete Confirmation Drawer ─── */}
+      <Drawer open={!!txToDelete} onClose={() => setTxToDelete(null)} title="Transaction Options">
+        <div className="p-4 space-y-4">
+          <button 
+            onClick={() => {
+              if (txToDelete) handleDeleteTx(txToDelete);
+              setTxToDelete(null);
+            }}
+            className="w-full bg-expense/10 text-expense py-4 rounded-xl font-bold active:scale-95 transition-transform"
+          >
+            Delete Transaction
+          </button>
+          <button 
+            onClick={() => setTxToDelete(null)}
+            className="w-full bg-surface text-text-primary py-4 rounded-xl font-bold active:scale-95 transition-transform"
+          >
+            Cancel
+          </button>
+        </div>
+      </Drawer>
     </div>
   );
 }

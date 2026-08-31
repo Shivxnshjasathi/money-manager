@@ -1,12 +1,13 @@
 import { ChevronLeft, ChevronRight, Search, SlidersHorizontal } from 'lucide-react';
 import { formatINR } from '../hooks';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface TopBarProps {
   title: string;
   onPrev?: () => void;
   onNext?: () => void;
-  income: number;
-  expense: number;
+  income?: number;
+  expense?: number;
   showSearch?: boolean;
   onSearch?: () => void;
   showFilter?: boolean;
@@ -16,56 +17,85 @@ interface TopBarProps {
 export default function TopBar({
   title, onPrev, onNext, income, expense, showSearch, onSearch, showFilter, onFilter,
 }: TopBarProps) {
-  const total = income - expense;
+  const total = (income || 0) - (expense || 0);
 
   return (
     <div className="bg-bg/85 backdrop-blur-xl pt-[env(safe-area-inset-top)] shrink-0 z-10 sticky top-0">
       {/* Title row */}
-      <div className="flex items-center justify-between px-4 h-12">
-        <div className="w-10 flex items-center">
-          {showSearch && (
-            <button onClick={onSearch} className="p-1 active:opacity-60 transition-opacity">
+      <div className="flex items-center justify-between px-4 h-14">
+        <div className="w-12 flex items-center">
+          {onPrev ? (
+            <motion.button 
+              whileTap={{ scale: 0.8, x: -4 }}
+              onClick={onPrev} 
+              className="p-1 -ml-2 active:opacity-60 transition-opacity text-text-primary"
+            >
+              <ChevronLeft size={28} />
+            </motion.button>
+          ) : showSearch ? (
+            <motion.button whileTap={{ scale: 0.85 }} onClick={onSearch} className="p-1 active:opacity-60 transition-opacity">
               <Search size={22} className="text-text-secondary" />
-            </button>
-          )}
+            </motion.button>
+          ) : null}
         </div>
-        <div className="flex items-center gap-2 text-lg font-semibold select-none">
-          {onPrev && (
-            <button onClick={onPrev} className="p-1 active:opacity-60 transition-opacity">
-              <ChevronLeft size={20} />
-            </button>
-          )}
-          <span>{title}</span>
-          {onNext && (
-            <button onClick={onNext} className="p-1 active:opacity-60 transition-opacity">
-              <ChevronRight size={20} />
-            </button>
-          )}
-        </div>
-        <div className="w-10 flex justify-end">
-          {showFilter && (
-            <button onClick={onFilter} className="p-1 active:opacity-60 transition-opacity">
+        
+        <AnimatePresence mode="wait">
+          <motion.div 
+            key={title}
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className="flex-1 flex items-center justify-center text-[17px] font-bold tracking-tight select-none truncate px-2"
+          >
+            {title}
+          </motion.div>
+        </AnimatePresence>
+        
+        <div className="w-12 flex justify-end items-center">
+          {onNext ? (
+            <motion.button 
+              whileTap={{ scale: 0.8, x: 4 }}
+              onClick={onNext} 
+              className="p-1 -mr-2 active:opacity-60 transition-opacity text-text-primary"
+            >
+              <ChevronRight size={28} />
+            </motion.button>
+          ) : showFilter ? (
+            <motion.button whileTap={{ scale: 0.85 }} onClick={onFilter} className="p-1 active:opacity-60 transition-opacity">
               <SlidersHorizontal size={22} className="text-text-secondary" />
-            </button>
-          )}
+            </motion.button>
+          ) : null}
         </div>
       </div>
 
       {/* Stats row */}
-      <div className="flex justify-between px-6 py-2.5 border-b border-border text-sm">
-        <div className="flex flex-col items-center">
-          <span className="text-text-tertiary text-xs">Income</span>
-          <span className="text-income font-semibold">{formatINR(income)}</span>
-        </div>
-        <div className="flex flex-col items-center">
-          <span className="text-text-tertiary text-xs">Exp.</span>
-          <span className="text-expense font-semibold">{formatINR(expense)}</span>
-        </div>
-        <div className="flex flex-col items-center">
-          <span className="text-text-tertiary text-xs">Total</span>
-          <span className={`font-semibold ${total >= 0 ? 'text-income' : 'text-expense'}`}>{formatINR(total)}</span>
-        </div>
-      </div>
+      {income !== undefined && expense !== undefined && (
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+          className="flex justify-between px-4 py-3 gap-2"
+        >
+          {[
+            { label: 'Income', value: income, color: 'text-income' },
+            { label: 'Expense', value: expense, color: 'text-expense' },
+            { label: 'Total', value: total, color: total >= 0 ? 'text-income' : 'text-expense' },
+          ].map((item, i) => (
+            <motion.div
+              key={item.label}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3, delay: 0.1 + i * 0.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="flex-1 flex flex-col items-center justify-center bg-surface/50 backdrop-blur-md rounded-[20px] py-3 border border-border/50 shadow-sm hover:shadow-md transition-shadow"
+            >
+              <span className="text-text-tertiary text-[10px] font-bold uppercase tracking-wider mb-1">{item.label}</span>
+              <span className={`${item.color} font-bold tracking-tight text-[15px]`}>{formatINR(item.value)}</span>
+            </motion.div>
+          ))}
+        </motion.div>
+      )}
     </div>
   );
 }

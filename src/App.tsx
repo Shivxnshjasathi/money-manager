@@ -8,6 +8,8 @@ import AddTransaction from './pages/AddTransaction';
 import More from './pages/More';
 import Budgets from './pages/Budgets';
 import Goals from './pages/Goals';
+import Notifications from './pages/Notifications';
+import PrivacySecurity from './pages/PrivacySecurity';
 import BottomNav from './components/BottomNav';
 import { seedDatabase, processRecurringTransactions } from './db';
 import { useTheme } from './hooks';
@@ -21,8 +23,8 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   const hideNav = location.pathname === '/add' || location.pathname.startsWith('/accounts/');
 
   return (
-    <div className="flex flex-col h-dvh bg-bg text-text-primary overflow-hidden">
-      <main className="flex-1 overflow-hidden relative">
+    <div className="flex flex-col h-dvh bg-bg text-text-primary overflow-hidden selection:bg-coral/30">
+      <main className={`flex-1 overflow-hidden relative ${!hideNav ? 'pb-14' : ''}`}>
         {children}
       </main>
       {!hideNav && <BottomNav />}
@@ -43,6 +45,8 @@ function AppRoutes() {
         <Route path="/more" element={<PageTransition><More /></PageTransition>} />
         <Route path="/budgets" element={<PageTransition><Budgets /></PageTransition>} />
         <Route path="/goals" element={<PageTransition><Goals /></PageTransition>} />
+        <Route path="/notifications" element={<PageTransition><Notifications /></PageTransition>} />
+        <Route path="/privacy-security" element={<PageTransition><PrivacySecurity /></PageTransition>} />
         <Route path="/add" element={<PageTransition><AddTransaction /></PageTransition>} />
       </Routes>
     </AnimatePresence>
@@ -63,19 +67,19 @@ function App() {
     const metaThemeColor = document.getElementById('meta-theme-color');
     if (theme === 'light') {
       document.documentElement.classList.add('light');
-      if (metaThemeColor) metaThemeColor.setAttribute('content', '#F2F2F7');
+      if (metaThemeColor) metaThemeColor.setAttribute('content', '#FFFFFF');
     } else {
       document.documentElement.classList.remove('light');
-      if (metaThemeColor) metaThemeColor.setAttribute('content', '#121214');
+      if (metaThemeColor) metaThemeColor.setAttribute('content', '#000000');
     }
   }, [theme]);
 
   if (!ready) {
     return (
       <div className="flex items-center justify-center h-screen bg-bg">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-coral flex items-center justify-center text-white text-2xl font-bold animate-pulse">
-            ₹
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-coral flex items-center justify-center text-bg text-2xl font-bold animate-pulse">
+            M
           </div>
           <span className="text-text-secondary text-sm">Loading…</span>
         </div>

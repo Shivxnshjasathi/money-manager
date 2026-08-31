@@ -11,9 +11,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Money Manager',
-        short_name: 'MoneyMgr',
-        description: 'Track your income, expenses and accounts',
+        name: 'Manifest',
+        short_name: 'Manifest',
+        description: 'Manifest your wealth.',
         theme_color: '#121214',
         background_color: '#121214',
         display: 'standalone',

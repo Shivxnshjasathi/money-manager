@@ -12,7 +12,7 @@ export default function Drawer({ open, onClose, title, children }: Props) {
   if (!open) return null;
 
   return (
-    <div className="absolute inset-0 z-50 fade-in overflow-hidden" onClick={onClose}>
+    <div className="absolute inset-0 z-[100] fade-in overflow-hidden" onClick={onClose}>
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/60" />
 

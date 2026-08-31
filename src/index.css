@@ -17,31 +17,33 @@
 
 @layer base {
   :root {
-    --app-bg: #121214;
-    --app-surface: #1C1C1E;
-    --app-elevated: #2C2C2E;
-    --app-border: #38383A;
+    /* Dark Mode — Pure Premium Monochromatic */
+    --app-bg: #000000;
+    --app-surface: #0A0A0A;
+    --app-elevated: #141414;
+    --app-border: rgba(255, 255, 255, 0.08);
     --app-text-primary: #FFFFFF;
-    --app-text-secondary: #8E8E93;
-    --app-text-tertiary: #636366;
-    --app-coral: #FF5A5F;
-    --app-income: #4E9FDF;
-    --app-expense: #E05353;
-    --app-transfer: #98989D;
+    --app-text-secondary: #A1A1AA;
+    --app-text-tertiary: #52525B;
+    --app-coral: #FFFFFF; /* Accent is pure white */
+    --app-income: #FFFFFF; /* Income is pure white */
+    --app-expense: #A1A1AA; /* Expense is grey */
+    --app-transfer: #71717A; /* Transfer is mid-grey */
   }
 
   :root.light {
-    --app-bg: #F2F2F7;
-    --app-surface: #FFFFFF;
-    --app-elevated: #E5E5EA;
-    --app-border: #D1D1D6;
+    /* Light Mode — Pure Premium Monochromatic */
+    --app-bg: #FFFFFF;
+    --app-surface: #F8F8F8;
+    --app-elevated: #F0F0F0;
+    --app-border: rgba(0, 0, 0, 0.08);
     --app-text-primary: #000000;
-    --app-text-secondary: #8E8E93;
-    --app-text-tertiary: #AEAEB2;
-    --app-coral: #FF3B30;
-    --app-income: #007AFF;
-    --app-expense: #FF3B30;
-    --app-transfer: #8E8E93;
+    --app-text-secondary: #52525B;
+    --app-text-tertiary: #A1A1AA;
+    --app-coral: #000000; /* Accent is pure black */
+    --app-income: #000000; /* Income is pure black */
+    --app-expense: #52525B; /* Expense is grey */
+    --app-transfer: #71717A; /* Transfer is mid-grey */
   }
 }
 
@@ -116,3 +118,22 @@ select {
 
 .slide-up { animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards; }
 .fade-in { animation: fadeIn 0.2s ease-out forwards; }
+
+@layer components {
+  .input-premium {
+    @apply w-full bg-elevated/80 backdrop-blur-md rounded-xl px-4 py-3.5 text-[15px] outline-none 
+           border border-white/5 dark:border-white/5 
+           focus:bg-elevated focus:border-coral/60 focus:ring-4 focus:ring-coral/10 
+           transition-all duration-300 placeholder:text-text-tertiary shadow-sm;
+  }
+  .input-premium-wrapper {
+    @apply flex items-center w-full bg-elevated/80 backdrop-blur-md rounded-xl px-4 py-3.5 
+           border border-white/5 dark:border-white/5 
+           focus-within:bg-elevated focus-within:border-coral/60 focus-within:ring-4 focus-within:ring-coral/10 
+           transition-all duration-300 shadow-sm;
+  }
+  .input-premium-wrapper input {
+    @apply flex-1 bg-transparent text-[15px] outline-none placeholder:text-text-tertiary;
+  }
+}
+

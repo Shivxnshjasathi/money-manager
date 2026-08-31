@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { format, addMonths, subMonths, isSameDay } from 'date-fns';
-import { Search, X, Trash2 } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import TopBar from '../components/TopBar';
 import Tabs from '../components/Tabs';
 import TransactionItem from '../components/TransactionItem';
@@ -33,6 +33,7 @@ export default function TransactionsList() {
   const [filterType, setFilterType] = useState<string>('all');
   const [filterAccount, setFilterAccount] = useState<string>('all');
   const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [txToDelete, setTxToDelete] = useState<string | null>(null);
 
   const rawTransactions = useTransactions(monthDate);
   const allTransactions = useAllTransactions();
@@ -78,7 +79,11 @@ export default function TransactionsList() {
     const txMap: Record<string, number> = {};
     
     // Sort all transactions ascending to compute running balances chronologically
-    const sorted = [...allTransactions].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const sorted = [...allTransactions].sort((a, b) => {
+      const timeDiff = new Date(a.date).getTime() - new Date(b.date).getTime();
+      if (timeDiff !== 0) return timeDiff;
+      return allTransactions.indexOf(a) - allTransactions.indexOf(b); // Tie-breaker: insertion order ascending
+    });
     
     sorted.forEach(tx => {
       if (tx.type === 'income') {
@@ -109,13 +114,25 @@ export default function TransactionsList() {
   // Group by date descending
   const grouped = useMemo(() => {
     const map: Record<string, ITransaction[]> = {};
-    const sorted = [...transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    sorted.forEach(tx => {
+    transactions.forEach(tx => {
       const key = tx.date.split('T')[0];
       (map[key] ??= []).push(tx);
     });
-    return map;
-  }, [transactions]);
+
+    // Sort groups descending by date
+    const sortedKeys = Object.keys(map).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+    
+    const sortedGroups: Record<string, ITransaction[]> = {};
+    sortedKeys.forEach(k => {
+      // Sort transactions WITHIN day descending by date
+      sortedGroups[k] = map[k].sort((a, b) => {
+        const timeDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
+        if (timeDiff !== 0) return timeDiff;
+        return allTransactions.indexOf(b) - allTransactions.indexOf(a); // Tie-breaker: insertion order descending
+      });
+    });
+    return sortedGroups;
+  }, [transactions, allTransactions]);
 
   // Filter for calendar day selection
   const filteredByCalDay = useMemo(() => {
@@ -145,31 +162,41 @@ export default function TransactionsList() {
   // ── Search Overlay ──
   if (searchOpen) {
     return (
-      <div className="flex flex-col flex-1 min-h-0 bg-bg">
+      <div className="flex flex-col h-full w-full bg-bg">
         {/* Search Bar */}
-        <div className="flex items-center gap-3 px-4 h-14 border-b border-border shrink-0 pt-[env(safe-area-inset-top)]">
-          <Search size={20} className="text-text-secondary shrink-0" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Search transactions..."
-            autoFocus
-            className="flex-1 bg-transparent text-text-primary text-sm outline-none placeholder:text-text-tertiary"
-          />
-          <button onClick={() => { setSearchOpen(false); setSearchQuery(''); }} className="p-1">
-            <X size={20} className="text-text-secondary" />
+        <div 
+          className="px-4 pb-3 shrink-0 bg-bg border-b border-border flex items-center gap-3"
+          style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
+        >
+          <div className="flex-1 input-premium-wrapper pr-2 py-2">
+            <Search size={18} className="text-text-secondary shrink-0 mr-2" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Search transactions..."
+              autoFocus
+              className="flex-1 bg-transparent border-none outline-none text-text-primary placeholder:text-text-tertiary"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} className="p-1.5 hover:bg-white/5 rounded-full transition-colors ml-1">
+                <X size={16} className="text-text-secondary hover:text-text-primary transition-colors" />
+              </button>
+            )}
+          </div>
+          <button onClick={() => { setSearchOpen(false); setSearchQuery(''); }} className="text-coral font-semibold text-sm">
+            Cancel
           </button>
         </div>
 
         {/* Results */}
         <div className="flex-1 overflow-y-auto">
           {searchQuery.trim() === '' ? (
-            <div className="flex items-center justify-center h-40 text-text-secondary text-sm">
+            <div className="flex items-center justify-center h-40 text-text-secondary text-sm text-center px-8">
               Type to search by category, account, note, amount…
             </div>
           ) : searchResults.length === 0 ? (
-            <div className="flex items-center justify-center h-40 text-text-secondary text-sm">
+            <div className="flex items-center justify-center h-40 text-text-secondary text-sm text-center px-8">
               No transactions found for "{searchQuery}"
             </div>
           ) : (
@@ -179,19 +206,14 @@ export default function TransactionsList() {
               </div>
               <motion.div variants={listVariants} initial="hidden" animate="visible">
                 {searchResults.map(tx => (
-                  <div key={tx.id} className="relative group">
+                  <div key={tx.id} className="px-4 mb-3">
                     <TransactionItem
                       transaction={tx}
                       categories={categories}
                       accounts={accounts}
                       runningBalance={runningBalances[tx.id]}
+                      onLongPress={() => setTxToDelete(tx.id)}
                     />
-                    <button
-                      onClick={() => handleDeleteTx(tx.id)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-expense/60 hover:text-expense transition-colors"
-                    >
-                      <Trash2 size={16} />
-                    </button>
                   </div>
                 ))}
               </motion.div>
@@ -203,7 +225,7 @@ export default function TransactionsList() {
   }
 
   return (
-    <div className="flex flex-col flex-1 min-h-0">
+    <div className="flex flex-col h-full w-full bg-bg">
       <TopBar
         title={format(monthDate, 'MMM yyyy')}
         onPrev={handlePrev}
@@ -240,35 +262,30 @@ export default function TransactionsList() {
               return (
                 <div key={dateKey}>
                   {/* Day header */}
-                  <div className="flex items-center justify-between px-4 py-2 bg-surface border-b border-border">
+                  <div className="flex items-center justify-between px-6 pt-4 pb-2 bg-transparent">
                     <div className="flex items-center gap-2">
-                      <span className="text-base font-bold">{format(d, 'dd')}</span>
-                      <span className="text-[10px] font-semibold bg-coral text-white px-1.5 py-0.5 rounded">
+                      <span className="text-base font-bold text-text-primary">{format(d, 'dd')}</span>
+                      <span className="text-[10px] font-bold bg-coral/10 text-coral px-2 py-0.5 rounded-full uppercase tracking-wider">
                         {format(d, 'EEE')}
                       </span>
                     </div>
-                    <div className="flex gap-4 text-xs font-semibold">
-                      {dayInc > 0 && <span className="text-income">{formatINR(dayInc)}</span>}
-                      {dayExp > 0 && <span className="text-expense">{formatINR(dayExp)}</span>}
+                    <div className="flex gap-4 text-xs font-bold">
+                      {dayInc > 0 && <span className="text-income">+{formatINR(dayInc)}</span>}
+                      {dayExp > 0 && <span className="text-expense">-{formatINR(dayExp)}</span>}
                     </div>
                   </div>
 
                   {/* Transactions with swipe-to-delete */}
                   <motion.div variants={listVariants} initial="hidden" animate="visible">
                     {txs.map(tx => (
-                      <div key={tx.id} className="relative group">
+                      <div key={tx.id} className="px-4 mb-3">
                         <TransactionItem
                           transaction={tx}
                           categories={categories}
                           accounts={accounts}
                           runningBalance={runningBalances[tx.id]}
+                          onLongPress={() => setTxToDelete(tx.id)}
                         />
-                        <button
-                          onClick={() => handleDeleteTx(tx.id)}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-expense/0 group-hover:text-expense/60 hover:!text-expense transition-all"
-                        >
-                          <Trash2 size={16} />
-                        </button>
                       </div>
                     ))}
                   </motion.div>
@@ -290,20 +307,31 @@ export default function TransactionsList() {
               onSelectDate={setCalSelectedDate}
             />
 
-            <div className="border-t border-border mt-2">
+            <div className="mt-4 px-4">
               {Object.entries(filteredGrouped).map(([dateKey, txs]) => {
                 const d = new Date(dateKey);
                 return (
-                  <div key={dateKey}>
-                    <div className="flex items-center gap-2 px-4 py-2 bg-surface border-b border-border">
-                      <span className="text-sm font-bold">{format(d, 'dd')}</span>
-                      <span className="text-[10px] font-semibold bg-coral text-white px-1.5 py-0.5 rounded">
-                        {format(d, 'EEE')}
+                  <div key={dateKey} className="mb-6">
+                    <div className="flex items-center gap-3 mb-4">
+                      <span className="text-lg font-bold tracking-tight text-text-primary">{format(d, 'dd')}</span>
+                      <span className="text-[11px] font-bold tracking-widest uppercase bg-elevated text-text-secondary px-2.5 py-1 rounded-lg">
+                        {format(d, 'EEEE')}
                       </span>
+                      <div className="h-px bg-border/50 flex-1 ml-2" />
                     </div>
-                    {txs.map(tx => (
-                      <TransactionItem key={tx.id} transaction={tx} categories={categories} accounts={accounts} />
-                    ))}
+                    <div className="pt-2">
+                      {txs.map(tx => (
+                        <div key={tx.id} className="px-4 mb-3">
+                          <TransactionItem 
+                            transaction={tx} 
+                            categories={categories} 
+                            accounts={accounts} 
+                            runningBalance={runningBalances[tx.id]}
+                            onLongPress={() => setTxToDelete(tx.id)}
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 );
               })}
@@ -434,12 +462,12 @@ export default function TransactionsList() {
       {/* Filter Drawer */}
       <Drawer open={filterOpen} onClose={() => setFilterOpen(false)} title="Filter Transactions">
         <div className="p-4 space-y-4">
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-text-secondary uppercase">Type</label>
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold text-text-secondary ml-1 uppercase tracking-wider block mb-1.5">Type</label>
             <select
               value={filterType}
               onChange={e => setFilterType(e.target.value)}
-              className="w-full bg-elevated text-text-primary px-4 py-3 rounded-xl border border-transparent focus:border-coral outline-none appearance-none"
+              className="input-premium"
             >
               <option value="all">All Types</option>
               <option value="income">Income</option>
@@ -448,12 +476,12 @@ export default function TransactionsList() {
             </select>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-text-secondary uppercase">Account</label>
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold text-text-secondary ml-1 uppercase tracking-wider block mb-1.5">Account</label>
             <select
               value={filterAccount}
               onChange={e => setFilterAccount(e.target.value)}
-              className="w-full bg-elevated text-text-primary px-4 py-3 rounded-xl border border-transparent focus:border-coral outline-none appearance-none"
+              className="input-premium"
             >
               <option value="all">All Accounts</option>
               {accounts.map(acc => (
@@ -462,12 +490,12 @@ export default function TransactionsList() {
             </select>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-text-secondary uppercase">Category</label>
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold text-text-secondary ml-1 uppercase tracking-wider block mb-1.5">Category</label>
             <select
               value={filterCategory}
               onChange={e => setFilterCategory(e.target.value)}
-              className="w-full bg-elevated text-text-primary px-4 py-3 rounded-xl border border-transparent focus:border-coral outline-none appearance-none"
+              className="input-premium"
             >
               <option value="all">All Categories</option>
               {categories.map(cat => (
@@ -485,6 +513,27 @@ export default function TransactionsList() {
             className="w-full bg-surface text-text-primary border border-border font-semibold py-3.5 rounded-xl active:scale-[0.98] transition-transform mt-4"
           >
             Reset Filters
+          </button>
+        </div>
+      </Drawer>
+
+      {/* ─── Delete Confirmation Drawer ─── */}
+      <Drawer open={!!txToDelete} onClose={() => setTxToDelete(null)} title="Transaction Options">
+        <div className="p-4 space-y-4">
+          <button 
+            onClick={() => {
+              if (txToDelete) handleDeleteTx(txToDelete);
+              setTxToDelete(null);
+            }}
+            className="w-full bg-expense/10 text-expense py-4 rounded-xl font-bold active:scale-95 transition-transform"
+          >
+            Delete Transaction
+          </button>
+          <button 
+            onClick={() => setTxToDelete(null)}
+            className="w-full bg-surface text-text-primary py-4 rounded-xl font-bold active:scale-95 transition-transform"
+          >
+            Cancel
           </button>
         </div>
       </Drawer>
