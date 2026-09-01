@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from './db';
 import type { ICategory, IAccount } from './types';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { create } from 'zustand';
 
 type Theme = 'dark' | 'light';
@@ -107,4 +107,44 @@ export function getCategoryById(categories: ICategory[], id: string): ICategory 
 
 export function getAccountById(accounts: IAccount[], id: string): IAccount | undefined {
   return accounts.find(a => a.id === id);
+}
+
+export function useSpeechRecognition(onResult: (text: string) => void) {
+  const [isListening, setIsListening] = useState(false);
+
+  useEffect(() => {
+    let recognition: any;
+    if (isListening && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      recognition.onresult = (event: any) => {
+        const transcript = Array.from(event.results)
+          .map((result: any) => result[0].transcript)
+          .join('');
+        onResult(transcript);
+      };
+
+      recognition.onerror = (event: any) => {
+        console.error('Speech recognition error', event.error);
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognition.start();
+    }
+    return () => {
+      if (recognition) {
+        recognition.stop();
+      }
+    };
+  }, [isListening, onResult]);
+
+  return { isListening, setIsListening };
 }

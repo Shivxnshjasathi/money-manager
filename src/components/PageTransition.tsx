@@ -36,7 +36,7 @@ export default function PageTransition({ children, className = '' }: Props) {
       animate="in"
       exit="out"
       variants={pageVariants}
-      className={`h-full w-full ${className}`}
+      className={`flex-1 flex flex-col w-full min-h-0 ${className}`}
     >
       {children}
     </motion.div>

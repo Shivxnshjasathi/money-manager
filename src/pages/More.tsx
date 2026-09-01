@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings, Filter, Moon, Sun, Bell, ShieldCheck, ChevronRight, PieChart, FileDown, Trash2, Footprints, ExternalLink } from 'lucide-react';
+import { Settings, Filter, Moon, Sun, Bell, ShieldCheck, ChevronRight, PieChart, FileDown, Trash2, Footprints, ExternalLink, Repeat } from 'lucide-react';
 import Drawer from '../components/Drawer';
 import { resetAllData } from '../db';
 import { useAllTransactions, useAccounts, useCategories, useTheme } from '../hooks';
@@ -68,6 +68,7 @@ export default function More() {
   const menuItems: Array<{ icon: any; label: string; onClick: () => void }> = [
     { icon: PieChart, label: 'Manage Budgets', onClick: () => navigate('/budgets') },
     { icon: Footprints, label: 'Savings Goals', onClick: () => navigate('/goals') },
+    { icon: Repeat, label: 'Subscriptions & Bills', onClick: () => navigate('/subscriptions') },
     { icon: FileDown, label: 'Export to CSV', onClick: handleExportCSV },
     { icon: Filter, label: 'Filter Transactions', onClick: () => setShowFilterDrawer(true) },
     { icon: theme === 'dark' ? Sun : Moon, label: theme === 'dark' ? 'Light Theme' : 'Dark Theme', onClick: toggleTheme },

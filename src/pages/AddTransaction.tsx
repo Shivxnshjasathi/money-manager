@@ -1,17 +1,31 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Star, Camera, X, Calendar, Tag, Wallet, FileText, AlignLeft, Repeat, ChevronRight } from 'lucide-react';
+import { ChevronLeft, Camera, X, Calendar, Tag, Wallet, FileText, AlignLeft, Repeat, ChevronRight, SplitSquareHorizontal, Wand2, Mic } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { format } from 'date-fns';
+import { motion, AnimatePresence } from 'framer-motion';
 import Drawer from '../components/Drawer';
 import { db } from '../db';
-import type { TransactionType } from '../types';
-import { useCategories, useAccountBalances } from '../hooks';
+import type { TransactionType, IAccount } from '../types';
+import { useCategories, useAccountBalances, useAllTransactions, useSpeechRecognition } from '../hooks';
+import { parseQuickAdd } from '../nlp';
 
 export default function AddTransaction() {
   const navigate = useNavigate();
   const categories = useCategories();
   const accounts = useAccountBalances();
+
+  const allTx = useAllTransactions();
+
+  const [quickAddText, setQuickAddText] = useState('');
+  const [isSmartAddExpanded, setIsSmartAddExpanded] = useState(false);
+  const { isListening, setIsListening } = useSpeechRecognition(setQuickAddText);
+  
+  const [currency, setCurrency] = useState('INR');
+  const RATES: Record<string, number> = { INR: 1, USD: 83.5, EUR: 90.2, GBP: 105.4, AED: 22.7, JPY: 0.55 };
+
+  const [isSplit, setIsSplit] = useState(false);
+  const [friendShare, setFriendShare] = useState('');
 
   const [type, setType] = useState<TransactionType>('expense');
   const [amount, setAmount] = useState('');
@@ -36,6 +50,15 @@ export default function AddTransaction() {
   const selectedAccObj = accounts.find(a => a.id === selectedAccount);
   const selectedToAccObj = accounts.find(a => a.id === toAccount);
 
+  // NLP Quick Add Effect
+  useEffect(() => {
+    if (!quickAddText) return;
+    const result = parseQuickAdd(quickAddText, allTx);
+    if (result.amount) setAmount(result.amount.toString());
+    if (result.type) setType(result.type);
+    if (result.note) setNote(result.note);
+    if (result.categoryId) setSelectedCategory(result.categoryId);
+  }, [quickAddText, allTx]);
 
   const resetForm = () => {
     setAmount('');
@@ -83,8 +106,26 @@ export default function AddTransaction() {
   };
 
   const handleSave = async (andContinue: boolean = false) => {
-    const numAmount = Number(amount);
-    if (!numAmount || numAmount <= 0) return;
+    const rawAmount = Number(amount);
+    if (!rawAmount || rawAmount <= 0) return;
+
+    const rate = RATES[currency] || 1;
+    const finalAmount = rawAmount * rate;
+    
+    let myShare = finalAmount;
+    let friendShareNum = 0;
+
+    if (isSplit && type === 'expense') {
+      const rawFriend = Number(friendShare);
+      if (rawFriend > 0) {
+        friendShareNum = rawFriend * rate;
+        myShare = finalAmount - friendShareNum;
+      }
+    }
+
+    const finalDescription = currency !== 'INR' 
+      ? `${description ? description + ' ' : ''}(${currency} ${amount})`.trim()
+      : description;
 
     let recurringId: string | undefined = undefined;
 
@@ -100,12 +141,12 @@ export default function AddTransaction() {
       await db.recurring_transactions.add({
         id: recurringId,
         type,
-        amount: numAmount,
+        amount: type === 'expense' ? myShare : finalAmount,
         categoryId: type === 'transfer' ? '' : selectedCategory,
         accountId: selectedAccount,
         toAccountId: type === 'transfer' ? toAccount : undefined,
         note,
-        description,
+        description: finalDescription,
         frequency,
         startDate: new Date(date).toISOString(),
         nextRunDate: nextRun.toISOString()
@@ -117,13 +158,13 @@ export default function AddTransaction() {
       await db.transactions.add({
         id: uuidv4(),
         type: 'transfer',
-        amount: numAmount,
+        amount: finalAmount,
         date: new Date(date).toISOString(),
         category: '',
         accountId: selectedAccount,
         toAccountId: toAccount,
         note,
-        description,
+        description: finalDescription,
         attachment,
         recurringId,
       });
@@ -132,15 +173,43 @@ export default function AddTransaction() {
       await db.transactions.add({
         id: uuidv4(),
         type,
-        amount: numAmount,
+        amount: type === 'expense' ? myShare : finalAmount,
         date: new Date(date).toISOString(),
         category: selectedCategory,
         accountId: selectedAccount,
         note,
-        description,
+        description: finalDescription,
         attachment,
         recurringId,
       });
+
+      // Splitting logic: record the debt
+      if (isSplit && friendShareNum > 0 && type === 'expense') {
+        let recAcc = (accounts as any[]).find(a => a.name === 'Money Owed');
+        if (!recAcc) {
+          const newAcc: IAccount = { 
+            id: uuidv4(), 
+            name: 'Money Owed', 
+            group: 'Others',
+            balance: 0,
+            settlementDate: 1,
+            paymentDate: 1
+          };
+          await db.accounts.add(newAcc);
+          recAcc = newAcc;
+        }
+        await db.transactions.add({
+          id: uuidv4(),
+          type: 'transfer',
+          amount: friendShareNum,
+          date: new Date(date).toISOString(),
+          category: '',
+          accountId: selectedAccount,
+          toAccountId: recAcc.id,
+          note: `Split: ${note}`,
+          description: `Friend's share for ${finalDescription}`,
+        });
+      }
     }
 
     if (andContinue) {
@@ -151,17 +220,63 @@ export default function AddTransaction() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-bg">
+    <div className="flex flex-col flex-1 bg-bg w-full min-h-0">
       {/* Header */}
       <div className="pt-[env(safe-area-inset-top)] shrink-0">
-        <div className="flex items-center justify-between px-4 h-14">
-          <button onClick={() => navigate(-1)} className="p-1">
-            <ChevronLeft size={28} />
-          </button>
-          <span className="text-lg font-semibold capitalize">Add {type}</span>
-          <button className="p-1">
-            <Star size={22} className="text-text-secondary" />
-          </button>
+        <div className="flex items-center justify-between px-4 h-14 relative">
+          <AnimatePresence mode="wait">
+            {!isSmartAddExpanded ? (
+              <motion.div 
+                key="title"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex items-center justify-between w-full"
+              >
+                <button onClick={() => navigate(-1)} className="p-1">
+                  <ChevronLeft size={28} />
+                </button>
+                <span className="text-lg font-semibold capitalize">Add {type}</span>
+                <button onClick={() => setIsSmartAddExpanded(true)} className="p-1">
+                  <Wand2 size={22} className="text-coral" />
+                </button>
+              </motion.div>
+            ) : (
+              <motion.div 
+                key="input"
+                initial={{ opacity: 0, width: '40px' }}
+                animate={{ opacity: 1, width: 'calc(100% - 2rem)' }}
+                exit={{ opacity: 0, width: '40px' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                className="absolute right-4 flex items-center bg-surface border border-coral rounded-full pl-4 pr-2 py-1.5 shadow-[0_0_20px_rgba(255,255,255,0.05)] h-10 top-2"
+              >
+                <Wand2 size={18} className="text-coral mr-3 shrink-0" />
+                <input
+                  type="text"
+                  placeholder="e.g. 'Spent 500 on coffee'"
+                  value={quickAddText}
+                  onChange={e => setQuickAddText(e.target.value)}
+                  className="flex-1 bg-transparent text-[15px] font-medium text-text-primary outline-none placeholder:text-text-tertiary"
+                  autoFocus
+                />
+                {quickAddText ? (
+                  <button onClick={() => setQuickAddText('')} className="p-1.5 text-text-tertiary hover:text-text-primary transition-colors">
+                    <X size={18} />
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setIsListening(!isListening)}
+                    className={`p-1.5 rounded-full transition-all duration-300 ${isListening ? 'bg-coral text-bg shadow-[0_0_15px_rgba(255,255,255,0.4)] animate-pulse' : 'text-text-secondary hover:text-coral hover:bg-elevated'}`}
+                  >
+                    <Mic size={18} />
+                  </button>
+                )}
+                <button onClick={() => setIsSmartAddExpanded(false)} className="p-1.5 text-text-tertiary hover:text-text-primary ml-1 border-l border-border pl-2">
+                  <X size={18} />
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
@@ -183,26 +298,40 @@ export default function AddTransaction() {
         })}
       </div>
 
-      {/* AMOUNT SECTION */}
-      <div className="flex flex-col items-center justify-center py-8">
-        <span className="text-[10px] font-bold tracking-widest text-text-secondary uppercase mb-2">Amount</span>
-        <div className="flex items-center justify-center w-full px-8">
-          <span className="text-3xl font-semibold text-text-secondary mr-2">₹</span>
-          <input
-            type="number"
-            inputMode="decimal"
-            value={amount}
-            onChange={e => setAmount(e.target.value)}
-            placeholder="0"
-            className="bg-transparent text-6xl font-bold text-text-primary outline-none max-w-full placeholder:text-text-tertiary"
-            style={{ width: `${Math.max(1, amount.length)}ch` }}
-            autoFocus
-          />
+
+      {/* Amount Row */}
+      <div className="flex justify-center py-8">
+        <div className="flex-1 flex flex-col items-center">
+          <span className="text-[10px] font-bold tracking-widest text-text-secondary uppercase mb-2">Amount</span>
+          <div className="flex items-end justify-center w-full">
+            <div className="flex-1 flex justify-end pr-2 pb-1.5">
+              <select 
+                value={currency} 
+                onChange={e => setCurrency(e.target.value)}
+                className="bg-transparent text-2xl font-medium text-text-tertiary outline-none appearance-none cursor-pointer hover:text-text-secondary"
+              >
+                {Object.keys(RATES).map(c => <option key={c} value={c}>{c === 'INR' ? '₹' : c}</option>)}
+              </select>
+            </div>
+            <input
+              type="number"
+              value={amount}
+              onChange={e => setAmount(e.target.value)}
+              placeholder="0"
+              className="bg-transparent text-5xl font-bold text-text-primary outline-none text-center placeholder:text-text-tertiary/30 tracking-tight"
+              style={{ width: `${Math.max(1, amount.length)}ch` }}
+              autoFocus
+            />
+            <div className="flex-1"></div>
+          </div>
+          {currency !== 'INR' && (
+            <span className="text-xs text-coral mt-2 font-medium">≈ ₹{((Number(amount)||0) * RATES[currency]).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+          )}
         </div>
       </div>
 
       {/* FORM CARD */}
-      <div className="flex-1 bg-surface rounded-t-[32px] px-4 pt-6 pb-20 shadow-[0_-8px_30px_rgba(0,0,0,0.5)] overflow-y-auto">
+      <div className="flex-1 min-h-0 bg-surface rounded-t-[32px] px-4 pt-6 pb-20 shadow-[0_-8px_30px_rgba(0,0,0,0.5)] overflow-y-auto">
         
         {/* Date Row */}
         <div className="flex items-center py-4 border-b border-border/50 group">
@@ -308,6 +437,39 @@ export default function AddTransaction() {
           </div>
         </div>
 
+        {/* Split Expense Row */}
+        {type === 'expense' && (
+          <div className="flex items-center py-4 border-b border-border/50 group">
+            <div className="w-12 h-12 rounded-full bg-elevated flex items-center justify-center text-text-secondary mr-4 group-active:scale-95 transition-transform">
+              <SplitSquareHorizontal size={20} />
+            </div>
+            <div className="flex-1 flex flex-col justify-center">
+              <span className="text-[10px] font-bold tracking-widest text-text-secondary uppercase mb-0.5">Split Expense</span>
+              <div className="flex items-center">
+                <label className="relative inline-flex items-center cursor-pointer mr-4">
+                  <input type="checkbox" className="sr-only peer" checked={isSplit} onChange={e => setIsSplit(e.target.checked)} />
+                  <div className="w-11 h-6 bg-border/50 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-transparent after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-coral peer-checked:after:bg-bg shrink-0"></div>
+                </label>
+                {isSplit && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-text-secondary text-sm">Friend owes:</span>
+                    <div className="flex items-center bg-surface border border-border rounded-md px-2 py-1">
+                      <span className="text-text-tertiary text-sm mr-1">{currency === 'INR' ? '₹' : currency}</span>
+                      <input
+                        type="number"
+                        value={friendShare}
+                        onChange={e => setFriendShare(e.target.value)}
+                        placeholder="0"
+                        className="w-16 bg-transparent text-sm outline-none text-text-primary"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Recurring Row */}
         <div className="flex items-center py-4 group">
           <div className="w-12 h-12 rounded-full bg-elevated flex items-center justify-center text-text-secondary mr-4 group-active:scale-95 transition-transform">
@@ -318,7 +480,7 @@ export default function AddTransaction() {
             <div className="flex items-center">
               <label className="relative inline-flex items-center cursor-pointer mr-4">
                 <input type="checkbox" className="sr-only peer" checked={isRecurring} onChange={e => setIsRecurring(e.target.checked)} />
-                <div className="w-11 h-6 bg-border/50 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-coral"></div>
+                <div className="w-11 h-6 bg-border/50 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-transparent after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-coral peer-checked:after:bg-bg shrink-0"></div>
               </label>
               {isRecurring && (
                 <div className="flex items-center gap-2">
