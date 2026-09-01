@@ -81,11 +81,13 @@ export default function AccountDetails() {
   if (!account) {
     return (
       <div className="flex flex-col h-full bg-bg">
-        <div className="flex items-center px-4 h-14 border-b border-border pt-[env(safe-area-inset-top)]">
-          <button onClick={() => navigate('/accounts')} className="p-2 -ml-2">
-            <ChevronLeft size={24} />
-          </button>
-          <span className="font-semibold text-lg ml-2">Account Not Found</span>
+        <div className="border-b border-border pt-[env(safe-area-inset-top)]">
+          <div className="flex items-center px-4 h-14">
+            <button onClick={() => navigate('/accounts')} className="p-2 -ml-2">
+              <ChevronLeft size={24} />
+            </button>
+            <span className="font-semibold text-lg ml-2">Account Not Found</span>
+          </div>
         </div>
       </div>
     );
@@ -94,13 +96,15 @@ export default function AccountDetails() {
   return (
     <div className="flex flex-col h-full w-full bg-bg">
       {/* Header */}
-      <div className="flex items-center px-4 h-14 pt-[env(safe-area-inset-top)] bg-surface border-b border-border shrink-0 sticky top-0 z-10">
-        <button onClick={() => navigate('/accounts')} className="p-2 -ml-2 text-text-primary active:scale-95 transition-transform">
-          <ChevronLeft size={24} />
-        </button>
-        <div className="ml-2 flex-1">
-          <h1 className="font-semibold text-lg">{account.name}</h1>
-          <p className="text-xs text-text-tertiary">{account.group}</p>
+      <div className="pt-[env(safe-area-inset-top)] bg-surface border-b border-border shrink-0 sticky top-0 z-10">
+        <div className="flex items-center px-4 h-14">
+          <button onClick={() => navigate('/accounts')} className="p-2 -ml-2 text-text-primary active:scale-95 transition-transform">
+            <ChevronLeft size={24} />
+          </button>
+          <div className="ml-2 flex-1">
+            <h1 className="font-semibold text-lg">{account.name}</h1>
+            <p className="text-xs text-text-tertiary">{account.group}</p>
+          </div>
         </div>
       </div>
 

@@ -63,14 +63,16 @@ export default function Goals() {
   return (
     <div className="flex flex-col h-full bg-bg">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 h-14 pt-[env(safe-area-inset-top)] shrink-0 border-b border-border">
-        <button onClick={() => navigate(-1)} className="p-1">
-          <ChevronLeft size={28} />
-        </button>
-        <span className="text-lg font-semibold">Savings Goals</span>
-        <button onClick={() => setShowAddDrawer(true)} className="p-1">
-          <Plus size={28} />
-        </button>
+      <div className="pt-[env(safe-area-inset-top)] shrink-0 border-b border-border">
+        <div className="flex items-center justify-between px-4 h-14">
+          <button onClick={() => navigate(-1)} className="p-1">
+            <ChevronLeft size={28} />
+          </button>
+          <span className="text-lg font-semibold">Savings Goals</span>
+          <button className="p-1" onClick={() => setShowAddDrawer(true)}>
+            <Plus size={22} className="text-coral" />
+          </button>
+        </div>
       </div>
 
       {/* Content */}

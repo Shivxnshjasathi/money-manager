@@ -153,14 +153,16 @@ export default function AddTransaction() {
   return (
     <div className="flex flex-col h-full bg-bg">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 h-14 pt-[env(safe-area-inset-top)] shrink-0">
-        <button onClick={() => navigate(-1)} className="p-1">
-          <ChevronLeft size={28} />
-        </button>
-        <span className="text-lg font-semibold capitalize">Add {type}</span>
-        <button className="p-1">
-          <Star size={22} className="text-text-secondary" />
-        </button>
+      <div className="pt-[env(safe-area-inset-top)] shrink-0">
+        <div className="flex items-center justify-between px-4 h-14">
+          <button onClick={() => navigate(-1)} className="p-1">
+            <ChevronLeft size={28} />
+          </button>
+          <span className="text-lg font-semibold capitalize">Add {type}</span>
+          <button className="p-1">
+            <Star size={22} className="text-text-secondary" />
+          </button>
+        </div>
       </div>
 
       {/* Type Segmented Control */}
