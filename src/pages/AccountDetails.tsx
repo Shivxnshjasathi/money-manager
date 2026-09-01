@@ -133,7 +133,7 @@ export default function AccountDetails() {
           <h2 className="font-semibold text-sm text-text-secondary sticky top-0 bg-bg py-2 z-10">Transaction History</h2>
           
           {accountTransactions.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-text-secondary text-sm bg-surface rounded-xl border border-border">
+            <div className="flex flex-col items-center justify-center py-12 text-text-secondary text-sm bg-surface rounded-2xl border border-border">
               <span className="text-3xl mb-2">📭</span>
               No transactions found
             </div>
@@ -161,13 +161,13 @@ export default function AccountDetails() {
               if (txToDelete) handleDeleteTx(txToDelete);
               setTxToDelete(null);
             }}
-            className="w-full bg-expense/10 text-expense py-4 rounded-xl font-bold active:scale-95 transition-transform"
+            className="w-full bg-expense/10 text-expense py-4 rounded-2xl font-bold active:scale-95 transition-transform"
           >
             Delete Transaction
           </button>
           <button 
             onClick={() => setTxToDelete(null)}
-            className="w-full bg-surface text-text-primary py-4 rounded-xl font-bold active:scale-95 transition-transform"
+            className="w-full bg-surface text-text-primary py-4 rounded-2xl font-bold active:scale-95 transition-transform"
           >
             Cancel
           </button>

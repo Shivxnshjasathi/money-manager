@@ -96,11 +96,11 @@ export default function Goals() {
                   variants={itemVariants}
                   layout
                   exit="exit"
-                  className="relative overflow-hidden bg-surface/60 backdrop-blur-xl rounded-[24px] p-6 border border-white/10 dark:border-white/5 shadow-xl shadow-black/5"
+                  className="relative overflow-hidden bg-surface/60 backdrop-blur-xl rounded-2xl p-6 border border-white/10 dark:border-white/5 shadow-xl shadow-black/5"
                 >
                   {/* Subtle color glow behind the card */}
                   <div 
-                    className="absolute -top-10 -right-10 w-32 h-32 rounded-full blur-3xl opacity-20 pointer-events-none"
+                    className="absolute -top-10 -right-10 w-32 h-32 rounded-2xl blur-3xl opacity-20 pointer-events-none"
                     style={{ backgroundColor: goal.color || '#0ABDE3' }}
                   />
 
@@ -119,12 +119,12 @@ export default function Goals() {
                     </button>
                   </div>
 
-                  <div className="relative h-2 bg-elevated rounded-full overflow-hidden">
+                  <div className="relative h-2 bg-elevated rounded-2xl overflow-hidden">
                     <motion.div 
                       initial={{ width: 0 }}
                       animate={{ width: `${progress}%` }}
                       transition={{ duration: 1, ease: 'easeOut' }}
-                      className="absolute top-0 left-0 h-full rounded-full transition-all"
+                      className="absolute top-0 left-0 h-full rounded-2xl transition-all"
                       style={{ backgroundColor: goal.color || '#0ABDE3' }}
                     />
                   </div>
@@ -151,7 +151,7 @@ export default function Goals() {
                         });
                       }
                     }}
-                    className="mt-4 w-full py-2 bg-elevated rounded-lg text-sm font-medium active:scale-95 transition-all"
+                    className="mt-4 w-full py-2 bg-elevated rounded-2xl text-sm font-medium active:scale-95 transition-all"
                   >
                     Add Funds
                   </button>
@@ -197,7 +197,7 @@ export default function Goals() {
                   <button
                     key={c}
                     onClick={() => setColor(c)}
-                    className="w-10 h-10 rounded-full flex items-center justify-center transition-transform active:scale-95"
+                    className="w-10 h-10 rounded-2xl flex items-center justify-center transition-transform active:scale-95"
                     style={{ backgroundColor: c }}
                   >
                     {color === c && <Check size={20} className="text-white" />}
@@ -210,7 +210,7 @@ export default function Goals() {
           <button
             onClick={handleSaveGoal}
             disabled={!isGoalValid}
-            className="w-full py-4 bg-coral text-bg rounded-xl font-bold active:scale-[0.98] transition-all disabled:opacity-50 disabled:active:scale-100"
+            className="w-full py-4 bg-coral text-bg rounded-2xl font-bold active:scale-[0.98] transition-all disabled:opacity-50 disabled:active:scale-100"
           >
             Create Goal
           </button>

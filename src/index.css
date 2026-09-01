@@ -12,16 +12,16 @@
   --color-income: var(--app-income);
   --color-expense: var(--app-expense);
   --color-transfer: var(--app-transfer);
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 @layer base {
   :root {
     /* Dark Mode — Pure Premium Monochromatic */
     --app-bg: #000000;
-    --app-surface: #0A0A0A;
-    --app-elevated: #141414;
-    --app-border: rgba(255, 255, 255, 0.08);
+    --app-surface: #121212;
+    --app-elevated: #1C1C1E;
+    --app-border: rgba(255, 255, 255, 0.12);
     --app-text-primary: #FFFFFF;
     --app-text-secondary: #A1A1AA;
     --app-text-tertiary: #52525B;
@@ -34,9 +34,9 @@
   :root.light {
     /* Light Mode — Pure Premium Monochromatic */
     --app-bg: #FFFFFF;
-    --app-surface: #F8F8F8;
-    --app-elevated: #F0F0F0;
-    --app-border: rgba(0, 0, 0, 0.08);
+    --app-surface: #F2F2F7;
+    --app-elevated: #E5E5EA;
+    --app-border: rgba(0, 0, 0, 0.12);
     --app-text-primary: #000000;
     --app-text-secondary: #52525B;
     --app-text-tertiary: #A1A1AA;
@@ -49,6 +49,7 @@
 
 * {
   -webkit-tap-highlight-color: transparent;
+  font-family: 'Poppins', sans-serif;
 }
 
 body {
@@ -59,7 +60,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
   user-select: none;
   overflow: hidden;
-  
+
   @media (min-width: 640px) {
     background-color: #000000;
   }
@@ -121,13 +122,13 @@ select {
 
 @layer components {
   .input-premium {
-    @apply w-full bg-elevated/80 backdrop-blur-md rounded-xl px-4 py-3.5 text-[15px] outline-none 
+    @apply w-full bg-elevated/80 backdrop-blur-md rounded-none px-4 py-3.5 text-[15px] outline-none 
            border border-white/5 dark:border-white/5 
            focus:bg-elevated focus:border-coral/60 focus:ring-4 focus:ring-coral/10 
            transition-all duration-300 placeholder:text-text-tertiary shadow-sm;
   }
   .input-premium-wrapper {
-    @apply flex items-center w-full bg-elevated/80 backdrop-blur-md rounded-xl px-4 py-3.5 
+    @apply flex items-center w-full bg-elevated/80 backdrop-blur-md rounded-none px-4 py-3.5 
            border border-white/5 dark:border-white/5 
            focus-within:bg-elevated focus-within:border-coral/60 focus-within:ring-4 focus-within:ring-coral/10 
            transition-all duration-300 shadow-sm;

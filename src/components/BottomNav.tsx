@@ -55,7 +55,7 @@ export default function BottomNav() {
             whileHover={{ scale: 1.1 }}
             transition={{ type: 'spring', stiffness: 400, damping: 15 }}
             onClick={() => navigate('/add')}
-            className="relative w-[52px] h-[52px] rounded-full bg-coral text-bg
+            className="relative w-[52px] h-[52px] rounded-[20px] bg-coral text-bg
                        flex items-center justify-center shadow-lg shadow-coral/30 border-[3px] border-bg"
             aria-label="Add transaction"
           >

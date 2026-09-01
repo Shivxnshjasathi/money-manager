@@ -80,7 +80,7 @@ export default function Budgets() {
     const remaining = budget.amount - spent;
     
     return (
-      <div key={budget.id} className="bg-surface rounded-xl p-4 border border-border group relative">
+      <div key={budget.id} className="bg-surface rounded-2xl p-4 border border-border group relative">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <span className="text-xl">{isOverall ? '🌍' : cat?.icon ?? '📝'}</span>
@@ -107,7 +107,7 @@ export default function Budgets() {
           </div>
         </div>
 
-        <div className="h-2 w-full bg-elevated rounded-full overflow-hidden">
+        <div className="h-2 w-full bg-elevated rounded-2xl overflow-hidden">
           <div 
             className={`h-full transition-all duration-500 ${getProgressBarColor(percentage)}`}
             style={{ width: `${percentage}%` }}
@@ -150,7 +150,7 @@ export default function Budgets() {
         </div>
 
         {budgets.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 text-text-secondary text-sm gap-2 bg-surface rounded-xl border border-border">
+          <div className="flex flex-col items-center justify-center h-48 text-text-secondary text-sm gap-2 bg-surface rounded-2xl border border-border">
             <span className="text-4xl">🎯</span>
             <span>No budgets set for this month</span>
             <span className="text-xs text-text-tertiary text-center px-4">
@@ -200,7 +200,7 @@ export default function Budgets() {
           <button
             onClick={handleSaveBudget}
             disabled={!isBudgetValid}
-            className="w-full bg-coral text-bg py-4 rounded-xl font-bold active:scale-[0.98] transition-all disabled:opacity-50 disabled:active:scale-100"
+            className="w-full bg-coral text-bg py-4 rounded-2xl font-bold active:scale-[0.98] transition-all disabled:opacity-50 disabled:active:scale-100"
           >
             Set Budget
           </button>

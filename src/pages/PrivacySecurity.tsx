@@ -14,7 +14,7 @@ export default function PrivacySecurity() {
       <div className="flex-1 overflow-y-auto pb-8 p-4">
         
         <div className="flex justify-center my-8">
-          <div className="w-24 h-24 rounded-[30px] bg-coral/10 border border-coral/20 flex items-center justify-center shadow-lg shadow-coral/5">
+          <div className="w-24 h-24 rounded-2xl bg-coral/10 border border-coral/20 flex items-center justify-center shadow-lg shadow-coral/5">
             <ShieldCheck size={48} className="text-coral" />
           </div>
         </div>
@@ -24,10 +24,10 @@ export default function PrivacySecurity() {
           <p className="text-sm text-text-secondary">Your financial data never leaves your device. It is stored completely offline and securely in your browser.</p>
         </div>
 
-        <div className="bg-surface/50 rounded-3xl border border-border/50 shadow-sm overflow-hidden mb-6 p-2 space-y-2">
+        <div className="bg-surface/50 rounded-2xl border border-border/50 shadow-sm overflow-hidden mb-6 p-2 space-y-2">
           
           <div className="flex items-center gap-4 p-4 rounded-2xl bg-bg border border-border/30">
-            <div className="w-12 h-12 rounded-full bg-elevated flex items-center justify-center shrink-0">
+            <div className="w-12 h-12 rounded-2xl bg-elevated flex items-center justify-center shrink-0">
               <Database size={22} className="text-coral" />
             </div>
             <div>
@@ -37,7 +37,7 @@ export default function PrivacySecurity() {
           </div>
           
           <div className="flex items-center gap-4 p-4 rounded-2xl bg-bg border border-border/30">
-            <div className="w-12 h-12 rounded-full bg-elevated flex items-center justify-center shrink-0">
+            <div className="w-12 h-12 rounded-2xl bg-elevated flex items-center justify-center shrink-0">
               <CloudOff size={22} className="text-coral" />
             </div>
             <div>
@@ -52,10 +52,10 @@ export default function PrivacySecurity() {
           <span className="text-[11px] font-bold text-text-tertiary uppercase tracking-[0.2em] ml-2">App Security</span>
         </div>
 
-        <div className="bg-surface/50 rounded-3xl border border-border/50 shadow-sm overflow-hidden mb-6">
+        <div className="bg-surface/50 rounded-2xl border border-border/50 shadow-sm overflow-hidden mb-6">
           <div className="flex items-center justify-between p-5">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-full bg-elevated flex items-center justify-center">
+              <div className="w-10 h-10 rounded-2xl bg-elevated flex items-center justify-center">
                 <Fingerprint size={20} className="text-text-primary" />
               </div>
               <div>
@@ -66,9 +66,9 @@ export default function PrivacySecurity() {
             
             <button 
               onClick={() => setAppLock(!appLock)}
-              className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-300 focus:outline-none ${appLock ? 'bg-coral' : 'bg-elevated'}`}
+              className={`relative inline-flex h-7 w-12 items-center rounded-2xl transition-colors duration-300 focus:outline-none ${appLock ? 'bg-coral' : 'bg-elevated'}`}
             >
-              <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform duration-300 ${appLock ? 'translate-x-6' : 'translate-x-1'}`} />
+              <span className={`inline-block h-5 w-5 transform rounded-2xl bg-white transition-transform duration-300 ${appLock ? 'translate-x-6' : 'translate-x-1'}`} />
             </button>
           </div>
           {appLock && (

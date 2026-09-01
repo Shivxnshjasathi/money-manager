@@ -78,7 +78,7 @@ function App() {
     return (
       <div className="flex items-center justify-center h-screen bg-bg">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-coral flex items-center justify-center text-bg text-2xl font-bold animate-pulse">
+          <div className="w-12 h-12 rounded-2xl bg-coral flex items-center justify-center text-bg text-2xl font-bold animate-pulse">
             M
           </div>
           <span className="text-text-secondary text-sm">Loading…</span>

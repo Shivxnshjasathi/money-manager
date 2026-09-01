@@ -61,11 +61,11 @@ export default function TransactionItem({ transaction: tx, categories, accounts,
       onMouseDown={handleTouchStart}
       onMouseUp={handleTouchEnd}
       onMouseLeave={handleTouchEnd}
-      className="flex items-center justify-between w-full p-4 rounded-[20px] border border-border shadow-sm transition-all bg-surface hover:bg-elevated hover:shadow-md"
+      className="flex items-center justify-between w-full p-4 rounded-2xl border border-border shadow-sm transition-all bg-surface hover:bg-elevated hover:shadow-md"
     >
       <div className="flex items-center gap-3 flex-1 min-w-0">
         {/* Icon */}
-        <div className="w-9 h-9 rounded-full bg-elevated flex items-center justify-center text-lg shrink-0 shadow-sm border border-border/50">
+        <div className="w-9 h-9 rounded-2xl bg-elevated flex items-center justify-center text-lg shrink-0 shadow-sm border border-border/50">
           {isTransfer ? '🔄' : cat?.icon ?? '📝'}
         </div>
 

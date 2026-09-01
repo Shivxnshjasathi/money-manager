@@ -1,17 +1,17 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Star, Camera, X } from 'lucide-react';
+import { ChevronLeft, Star, Camera, X, Calendar, Tag, Wallet, FileText, AlignLeft, Repeat, ChevronRight } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { format } from 'date-fns';
 import Drawer from '../components/Drawer';
 import { db } from '../db';
 import type { TransactionType } from '../types';
-import { useCategories, useAccounts } from '../hooks';
+import { useCategories, useAccountBalances } from '../hooks';
 
 export default function AddTransaction() {
   const navigate = useNavigate();
   const categories = useCategories();
-  const accounts = useAccounts();
+  const accounts = useAccountBalances();
 
   const [type, setType] = useState<TransactionType>('expense');
   const [amount, setAmount] = useState('');
@@ -36,9 +36,6 @@ export default function AddTransaction() {
   const selectedAccObj = accounts.find(a => a.id === selectedAccount);
   const selectedToAccObj = accounts.find(a => a.id === toAccount);
 
-  const activeColor = type === 'income' ? '#4E9FDF' : type === 'expense' ? '#E05353' : '#98989D';
-  const activeColorClass = type === 'income' ? 'text-income' : type === 'expense' ? 'text-expense' : 'text-transfer';
-  const activeBgClass = type === 'income' ? 'bg-income' : type === 'expense' ? 'bg-expense' : 'bg-transfer';
 
   const resetForm = () => {
     setAmount('');
@@ -160,14 +157,14 @@ export default function AddTransaction() {
         <button onClick={() => navigate(-1)} className="p-1">
           <ChevronLeft size={28} />
         </button>
-        <span className="text-lg font-semibold capitalize">{type}</span>
+        <span className="text-lg font-semibold capitalize">Add {type}</span>
         <button className="p-1">
           <Star size={22} className="text-text-secondary" />
         </button>
       </div>
 
       {/* Type Segmented Control */}
-      <div className="flex mx-4 mb-4 bg-surface rounded-xl overflow-hidden border border-border">
+      <div className="flex mx-4 mb-4 bg-surface rounded-full overflow-hidden border border-border p-1">
         {(['income', 'expense', 'transfer'] as TransactionType[]).map(t => {
           const isActive = type === t;
           const color = t === 'income' ? 'text-income' : t === 'expense' ? 'text-expense' : 'text-transfer';
@@ -175,8 +172,8 @@ export default function AddTransaction() {
             <button
               key={t}
               onClick={() => { setType(t); setSelectedCategory(''); }}
-              className={`flex-1 py-2.5 text-sm font-semibold capitalize transition-all duration-200
-                ${isActive ? `${color} bg-elevated` : 'text-text-secondary'}`}
+              className={`flex-1 py-2 text-sm font-semibold capitalize transition-all duration-200 rounded-full
+                ${isActive ? `${color} bg-elevated shadow-sm` : 'text-text-secondary'}`}
             >
               {t}
             </button>
@@ -184,163 +181,189 @@ export default function AddTransaction() {
         })}
       </div>
 
-      {/* Form */}
-      <div className="flex-1 overflow-y-auto px-4 space-y-0">
-        {/* Date */}
-        <div className="flex items-center py-4 border-b border-border">
-          <span className="text-text-secondary text-sm w-20 shrink-0">Date</span>
+      {/* AMOUNT SECTION */}
+      <div className="flex flex-col items-center justify-center py-8">
+        <span className="text-[10px] font-bold tracking-widest text-text-secondary uppercase mb-2">Amount</span>
+        <div className="flex items-center justify-center w-full px-8">
+          <span className="text-3xl font-semibold text-text-secondary mr-2">₹</span>
           <input
-            type="date"
-            value={date}
-            onChange={e => setDate(e.target.value)}
-            className="flex-1 bg-transparent text-text-primary text-sm outline-none"
+            type="number"
+            inputMode="decimal"
+            value={amount}
+            onChange={e => setAmount(e.target.value)}
+            placeholder="0"
+            className="bg-transparent text-6xl font-bold text-text-primary outline-none max-w-full placeholder:text-text-tertiary"
+            style={{ width: `${Math.max(1, amount.length)}ch` }}
+            autoFocus
           />
         </div>
+      </div>
 
-        {/* Amount */}
-        <div className="flex items-center py-4 border-b border-border">
-          <span className="text-text-secondary text-sm w-20 shrink-0">Amount</span>
-          <div className="flex items-center flex-1 gap-2">
-            <span className={`text-2xl font-bold ${activeColorClass}`}>₹</span>
+      {/* FORM CARD */}
+      <div className="flex-1 bg-surface rounded-t-[32px] px-4 pt-6 pb-20 shadow-[0_-8px_30px_rgba(0,0,0,0.5)] overflow-y-auto">
+        
+        {/* Date Row */}
+        <div className="flex items-center py-4 border-b border-border/50 group">
+          <div className="w-12 h-12 rounded-full bg-elevated flex items-center justify-center text-text-secondary mr-4 group-active:scale-95 transition-transform">
+            <Calendar size={20} />
+          </div>
+          <div className="flex-1 flex flex-col justify-center relative">
+            <span className="text-[10px] font-bold tracking-widest text-text-secondary uppercase mb-0.5">Date</span>
+            <span className="text-base font-semibold text-text-primary">
+              {format(new Date(date), 'dd/MM/yyyy')}
+            </span>
             <input
-              type="number"
-              inputMode="decimal"
-              value={amount}
-              onChange={e => setAmount(e.target.value)}
-              placeholder="0.00"
-              className="flex-1 bg-transparent text-2xl font-bold outline-none placeholder:text-text-tertiary"
-              style={{ borderBottom: `2px solid ${activeColor}` }}
-              autoFocus
+              type="date"
+              value={date}
+              onChange={e => setDate(e.target.value)}
+              className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
             />
           </div>
+          <Calendar size={18} className="text-text-tertiary" />
         </div>
-
-        {/* Category (not for transfer) */}
+        
+        {/* Category Row */}
         {type !== 'transfer' && (
-          <button
-            onClick={() => setShowCatPicker(true)}
-            className="flex items-center py-4 border-b border-border w-full"
-          >
-            <span className="text-text-secondary text-sm w-20 shrink-0">Category</span>
-            <div className="flex items-center gap-2 flex-1">
+          <button onClick={() => setShowCatPicker(true)} className="w-full flex items-center py-4 border-b border-border/50 text-left group">
+            <div className="w-12 h-12 rounded-full bg-elevated flex items-center justify-center text-text-secondary mr-4 group-active:scale-95 transition-transform">
+              <Tag size={20} />
+            </div>
+            <div className="flex-1 flex flex-col justify-center">
+              <span className="text-[10px] font-bold tracking-widest text-text-secondary uppercase mb-0.5">Category</span>
               {selectedCatObj ? (
-                <>
-                  <span className="text-lg">{selectedCatObj.icon}</span>
-                  <span className="text-sm">{selectedCatObj.name}</span>
-                </>
+                <span className="text-base font-semibold text-text-primary flex items-center gap-2">
+                  <span>{selectedCatObj.icon}</span> {selectedCatObj.name}
+                </span>
               ) : (
-                <span className="text-text-tertiary text-sm">Select category</span>
+                <span className="text-base font-semibold text-text-primary">Select category</span>
               )}
             </div>
+            <ChevronRight size={18} className="text-text-tertiary" />
           </button>
         )}
 
-        {/* Account / From Account */}
-        <button
-          onClick={() => setShowAccPicker(true)}
-          className="flex items-center py-4 border-b border-border w-full"
-        >
-          <span className="text-text-secondary text-sm w-20 shrink-0">{type === 'transfer' ? 'From' : 'Account'}</span>
-          <div className="flex items-center gap-2 flex-1">
-            {selectedAccObj ? (
-              <span className="text-sm">{selectedAccObj.name}</span>
-            ) : (
-              <span className="text-text-tertiary text-sm">Select account</span>
-            )}
+        {/* Account Row */}
+        <button onClick={() => setShowAccPicker(true)} className="w-full flex items-center py-4 border-b border-border/50 text-left group">
+          <div className="w-12 h-12 rounded-full bg-elevated flex items-center justify-center text-text-secondary mr-4 group-active:scale-95 transition-transform">
+            <Wallet size={20} />
           </div>
+          <div className="flex-1 flex flex-col justify-center">
+            <span className="text-[10px] font-bold tracking-widest text-text-secondary uppercase mb-0.5">{type === 'transfer' ? 'From Account' : 'Account'}</span>
+            <span className="text-base font-semibold text-text-primary">{selectedAccObj ? selectedAccObj.name : 'Select account'}</span>
+          </div>
+          <ChevronRight size={18} className="text-text-tertiary" />
         </button>
 
         {/* To Account (transfer only) */}
         {type === 'transfer' && (
-          <button
-            onClick={() => setShowToAccPicker(true)}
-            className="flex items-center py-4 border-b border-border w-full"
-          >
-            <span className="text-text-secondary text-sm w-20 shrink-0">To</span>
-            <div className="flex items-center gap-2 flex-1">
-              {selectedToAccObj ? (
-                <span className="text-sm">{selectedToAccObj.name}</span>
-              ) : (
-                <span className="text-text-tertiary text-sm">Select account</span>
-              )}
+          <button onClick={() => setShowToAccPicker(true)} className="w-full flex items-center py-4 border-b border-border/50 text-left group">
+            <div className="w-12 h-12 rounded-full bg-elevated flex items-center justify-center text-text-secondary mr-4 group-active:scale-95 transition-transform">
+              <Wallet size={20} />
             </div>
+            <div className="flex-1 flex flex-col justify-center">
+              <span className="text-[10px] font-bold tracking-widest text-text-secondary uppercase mb-0.5">To Account</span>
+              <span className="text-base font-semibold text-text-primary">{selectedToAccObj ? selectedToAccObj.name : 'Select account'}</span>
+            </div>
+            <ChevronRight size={18} className="text-text-tertiary" />
           </button>
         )}
 
-        {/* Note */}
-        <div className="flex items-center py-4 border-b border-border">
-          <span className="text-text-secondary text-sm w-20 shrink-0">Note</span>
-          <input
-            type="text"
-            value={note}
-            onChange={e => setNote(e.target.value)}
-            placeholder="Add note"
-            className="flex-1 bg-transparent text-sm outline-none placeholder:text-text-tertiary"
-          />
-          <label className="cursor-pointer ml-2 shrink-0">
+        {/* Note Row */}
+        <div className="flex items-center py-4 border-b border-border/50 group">
+          <div className="w-12 h-12 rounded-full bg-elevated flex items-center justify-center text-text-secondary mr-4 group-active:scale-95 transition-transform">
+            <FileText size={20} />
+          </div>
+          <div className="flex-1 flex flex-col justify-center">
+            <span className="text-[10px] font-bold tracking-widest text-text-secondary uppercase mb-0.5">Note</span>
+            <input
+              type="text"
+              value={note}
+              onChange={e => setNote(e.target.value)}
+              placeholder="Add note"
+              className="bg-transparent text-base font-semibold text-text-primary outline-none placeholder:text-text-tertiary"
+            />
+          </div>
+          <label className="cursor-pointer shrink-0">
             <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
             <Camera size={20} className="text-text-tertiary hover:text-text-primary transition-colors" />
           </label>
         </div>
-        
-        {/* Attachment Preview */}
-        {attachment && (
-          <div className="flex py-4 border-b border-border">
-            <span className="text-text-secondary text-sm w-20 shrink-0">Photo</span>
-            <div className="relative">
-              <img src={attachment} alt="Receipt preview" className="h-24 w-auto rounded-lg border border-border" />
-              <button 
-                onClick={() => setAttachment(undefined)} 
-                className="absolute -top-2 -right-2 bg-surface rounded-full p-1 border border-border text-text-secondary hover:text-text-primary"
-              >
-                <X size={14} /> 
-              </button>
+
+        {/* Description Row */}
+        <div className="flex items-center py-4 border-b border-border/50 group">
+          <div className="w-12 h-12 rounded-full bg-elevated flex items-center justify-center text-text-secondary mr-4 group-active:scale-95 transition-transform">
+            <AlignLeft size={20} />
+          </div>
+          <div className="flex-1 flex flex-col justify-center">
+            <span className="text-[10px] font-bold tracking-widest text-text-secondary uppercase mb-0.5">Description</span>
+            <input
+              type="text"
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+              placeholder="Description"
+              className="bg-transparent text-base font-semibold text-text-primary outline-none placeholder:text-text-tertiary"
+            />
+          </div>
+        </div>
+
+        {/* Recurring Row */}
+        <div className="flex items-center py-4 group">
+          <div className="w-12 h-12 rounded-full bg-elevated flex items-center justify-center text-text-secondary mr-4 group-active:scale-95 transition-transform">
+            <Repeat size={20} />
+          </div>
+          <div className="flex-1 flex flex-col justify-center">
+            <span className="text-[10px] font-bold tracking-widest text-text-secondary uppercase mb-0.5">Recurring</span>
+            <div className="flex items-center">
+              <label className="relative inline-flex items-center cursor-pointer mr-4">
+                <input type="checkbox" className="sr-only peer" checked={isRecurring} onChange={e => setIsRecurring(e.target.checked)} />
+                <div className="w-11 h-6 bg-border/50 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-coral"></div>
+              </label>
+              {isRecurring && (
+                <div className="flex items-center gap-2">
+                  <select
+                    value={frequency}
+                    onChange={e => setFrequency(e.target.value as any)}
+                    className="bg-transparent text-base font-semibold outline-none border-none text-text-primary"
+                  >
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="yearly">Yearly</option>
+                  </select>
+                  <span className="text-[10px] text-text-tertiary font-bold tracking-wider uppercase">(Fixed)</span>
+                </div>
+              )}
             </div>
           </div>
-        )}
-
-        {/* Description */}
-        <div className="flex items-center py-4 border-b border-border">
-          <span className="text-text-secondary text-sm w-20 shrink-0">Desc.</span>
-          <input
-            type="text"
-            value={description}
-            onChange={e => setDescription(e.target.value)}
-            placeholder="Description"
-            className="flex-1 bg-transparent text-sm outline-none placeholder:text-text-tertiary"
-          />
         </div>
-
-        {/* Recurring */}
-        <div className="flex items-center py-4 border-b border-border justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-text-secondary text-sm w-20 shrink-0">Recurring</span>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" className="sr-only peer" checked={isRecurring} onChange={e => setIsRecurring(e.target.checked)} />
-              <div className="w-11 h-6 bg-surface peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-coral border border-border"></div>
-            </label>
-          </div>
-          
-          {isRecurring && (
-            <select
-              value={frequency}
-              onChange={e => setFrequency(e.target.value as any)}
-              className="bg-elevated text-sm px-3 py-1.5 rounded-lg outline-none border border-border"
+        
+        {/* Attachment Preview (if any) */}
+        {attachment && (
+          <div className="relative mt-4">
+            <img src={attachment} alt="Receipt preview" className="w-full h-32 object-cover rounded-2xl border border-border" />
+            <button 
+              onClick={() => setAttachment(undefined)} 
+              className="absolute top-2 right-2 bg-surface/80 backdrop-blur-md rounded-full p-2 border border-border text-text-secondary hover:text-text-primary"
             >
-              <option value="daily">Daily</option>
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
-              <option value="yearly">Yearly</option>
-            </select>
-          )}
-        </div>
+              <X size={16} /> 
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Action Buttons */}
       <div className="p-4 bg-elevated shrink-0 pb-[calc(16px+env(safe-area-inset-bottom))]">
         <button
-          onClick={() => handleSave(false)}
-          className={`w-full py-4 rounded-xl font-semibold text-white transition-all active:scale-[0.98] ${activeBgClass}`}
+          onClick={() => {
+            const isValid = amount.length > 0 && parseFloat(amount) > 0 && selectedAccount && (type === 'transfer' ? toAccount : selectedCategory);
+            if (isValid) handleSave(false);
+          }}
+          disabled={!(amount.length > 0 && parseFloat(amount) > 0 && selectedAccount && (type === 'transfer' ? toAccount : selectedCategory))}
+          className={`w-full py-4 rounded-full font-semibold transition-all active:scale-[0.98] ${
+            (amount.length > 0 && parseFloat(amount) > 0 && selectedAccount && (type === 'transfer' ? toAccount : selectedCategory))
+              ? 'bg-coral text-bg shadow-lg shadow-black/10'
+              : 'bg-surface border border-border text-text-secondary opacity-50'
+          }`}
         >
           Save
         </button>
@@ -353,7 +376,7 @@ export default function AddTransaction() {
             <button
               key={cat.id}
               onClick={() => { setSelectedCategory(cat.id); setShowCatPicker(false); }}
-              className={`flex flex-col items-center gap-1 p-3 rounded-xl transition-all active:scale-95
+              className={`flex flex-col items-center gap-1 p-3 rounded-2xl transition-all active:scale-95
                 ${selectedCategory === cat.id ? 'bg-coral/20 ring-1 ring-coral' : 'bg-elevated'}`}
             >
               <span className="text-2xl">{cat.icon}</span>
@@ -375,12 +398,17 @@ export default function AddTransaction() {
               <button
                 key={acc.id}
                 onClick={() => { setSelectedAccount(acc.id); setShowAccPicker(false); }}
-                className={`flex items-center justify-between w-full px-4 py-3 rounded-xl transition-all active:scale-[0.98]
+                className={`flex items-center justify-between w-full px-4 py-3 rounded-2xl transition-all active:scale-[0.98]
                   ${selectedAccount === acc.id ? 'bg-coral/20 ring-1 ring-coral' : 'bg-elevated'}`}
               >
                 <div className="flex flex-col items-start">
                   <span className="text-sm font-medium">{acc.name}</span>
                   <span className="text-xs text-text-tertiary">{acc.group}</span>
+                </div>
+                <div className="flex items-center">
+                  <span className="text-sm font-bold text-text-primary">
+                    ₹{acc.computedBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
                 </div>
               </button>
             ))
@@ -400,12 +428,17 @@ export default function AddTransaction() {
               <button
                 key={acc.id}
                 onClick={() => { setToAccount(acc.id); setShowToAccPicker(false); }}
-                className={`flex items-center justify-between w-full px-4 py-3 rounded-xl transition-all active:scale-[0.98]
+                className={`flex items-center justify-between w-full px-4 py-3 rounded-2xl transition-all active:scale-[0.98]
                   ${toAccount === acc.id ? 'bg-coral/20 ring-1 ring-coral' : 'bg-elevated'}`}
               >
                 <div className="flex flex-col items-start">
                   <span className="text-sm font-medium">{acc.name}</span>
                   <span className="text-xs text-text-tertiary">{acc.group}</span>
+                </div>
+                <div className="flex items-center">
+                  <span className="text-sm font-bold text-text-primary">
+                    ₹{acc.computedBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
                 </div>
               </button>
             ))

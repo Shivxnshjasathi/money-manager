@@ -59,9 +59,9 @@ export default function CalendarView({ transactions, monthDate, selectedDate, on
       transition={{ duration: 0.3 }}
       className="px-4 pt-2 mb-6"
     >
-      <div className="bg-surface/60 backdrop-blur-2xl border border-border/50 rounded-3xl p-4 shadow-sm relative overflow-hidden">
+      <div className="bg-surface/60 backdrop-blur-2xl border border-border/50 rounded-2xl p-4 shadow-sm relative overflow-hidden">
         {/* Decorative background glow */}
-        <div className="absolute -top-10 -right-10 w-32 h-32 bg-coral/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -top-10 -right-10 w-32 h-32 bg-coral/10 rounded-2xl blur-3xl pointer-events-none" />
         
         {/* Header */}
         <div className="grid grid-cols-7 mb-3 relative z-10">

@@ -14,7 +14,7 @@ export default function Tabs({ tabs, active, onChange, accentColor }: TabsProps)
           <button
             key={tab}
             onClick={() => onChange(tab)}
-            className={`px-5 py-2 text-[13px] font-bold whitespace-nowrap rounded-full transition-all duration-300
+            className={`px-5 py-2 text-[13px] font-bold whitespace-nowrap rounded-2xl transition-all duration-300
               ${isActive
                 ? 'bg-coral text-bg shadow-lg shadow-black/10 scale-105'
                 : 'bg-surface/50 text-text-secondary hover:bg-surface hover:text-text-primary'

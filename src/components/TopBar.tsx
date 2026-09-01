@@ -88,7 +88,7 @@ export default function TopBar({
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.3, delay: 0.1 + i * 0.05 }}
               whileTap={{ scale: 0.95 }}
-              className="flex-1 flex flex-col items-center justify-center bg-surface/50 backdrop-blur-md rounded-[20px] py-3 border border-border/50 shadow-sm hover:shadow-md transition-shadow"
+              className="flex-1 flex flex-col items-center justify-center bg-surface/50 backdrop-blur-md rounded-2xl py-3 border border-border/50 shadow-sm hover:shadow-md transition-shadow"
             >
               <span className="text-text-tertiary text-[10px] font-bold uppercase tracking-wider mb-1">{item.label}</span>
               <span className={`${item.color} font-bold tracking-tight text-[15px]`}>{formatINR(item.value)}</span>

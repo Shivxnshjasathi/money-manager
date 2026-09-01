@@ -179,7 +179,7 @@ export default function TransactionsList() {
               className="flex-1 bg-transparent border-none outline-none text-text-primary placeholder:text-text-tertiary"
             />
             {searchQuery && (
-              <button onClick={() => setSearchQuery('')} className="p-1.5 hover:bg-white/5 rounded-full transition-colors ml-1">
+              <button onClick={() => setSearchQuery('')} className="p-1.5 hover:bg-white/5 rounded-2xl transition-colors ml-1">
                 <X size={16} className="text-text-secondary hover:text-text-primary transition-colors" />
               </button>
             )}
@@ -265,7 +265,7 @@ export default function TransactionsList() {
                   <div className="flex items-center justify-between px-6 pt-4 pb-2 bg-transparent">
                     <div className="flex items-center gap-2">
                       <span className="text-base font-bold text-text-primary">{format(d, 'dd')}</span>
-                      <span className="text-[10px] font-bold bg-coral/10 text-coral px-2 py-0.5 rounded-full uppercase tracking-wider">
+                      <span className="text-[10px] font-bold bg-coral/10 text-coral px-2 py-0.5 rounded-2xl uppercase tracking-wider">
                         {format(d, 'EEE')}
                       </span>
                     </div>
@@ -314,7 +314,7 @@ export default function TransactionsList() {
                   <div key={dateKey} className="mb-6">
                     <div className="flex items-center gap-3 mb-4">
                       <span className="text-lg font-bold tracking-tight text-text-primary">{format(d, 'dd')}</span>
-                      <span className="text-[11px] font-bold tracking-widest uppercase bg-elevated text-text-secondary px-2.5 py-1 rounded-lg">
+                      <span className="text-[11px] font-bold tracking-widest uppercase bg-elevated text-text-secondary px-2.5 py-1 rounded-2xl">
                         {format(d, 'EEEE')}
                       </span>
                       <div className="h-px bg-border/50 flex-1 ml-2" />
@@ -342,7 +342,7 @@ export default function TransactionsList() {
         {/* ─── Monthly View ─── */}
         {activeTab === 'Monthly' && (
           <div className="fade-in p-4">
-            <div className="bg-surface rounded-xl p-4 border border-border">
+            <div className="bg-surface rounded-2xl p-4 border border-border">
               <h3 className="text-sm font-semibold text-text-secondary mb-3">Monthly Summary</h3>
               <div className="space-y-3">
                 <div className="flex justify-between">
@@ -379,7 +379,7 @@ export default function TransactionsList() {
                 const items = Object.values(catMap).sort((a, b) => b.amount - a.amount);
                 if (items.length === 0) return <p className="text-text-tertiary text-sm">No expenses this month</p>;
                 return items.map(item => (
-                  <div key={item.name} className="flex items-center justify-between bg-surface rounded-xl px-4 py-3 border border-border">
+                  <div key={item.name} className="flex items-center justify-between bg-surface rounded-2xl px-4 py-3 border border-border">
                     <div className="flex items-center gap-3">
                       <span className="text-xl">{item.icon}</span>
                       <span className="font-medium">{item.name}</span>
@@ -409,7 +409,7 @@ export default function TransactionsList() {
               const items = Object.values(catMap).sort((a, b) => (b.income + b.expense) - (a.income + a.expense));
               if (items.length === 0) return <p className="text-text-tertiary text-sm text-center pt-10">No data this month</p>;
               return items.map(item => (
-                <div key={item.name} className="bg-surface rounded-xl px-4 py-3 border border-border">
+                <div key={item.name} className="bg-surface rounded-2xl px-4 py-3 border border-border">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <span className="text-lg">{item.icon}</span>
@@ -438,7 +438,7 @@ export default function TransactionsList() {
                 .map(tx => {
                   const cat = categories.find(c => c.id === tx.category);
                   return (
-                    <div key={tx.id} className="bg-surface rounded-xl px-4 py-3 border border-border">
+                    <div key={tx.id} className="bg-surface rounded-2xl px-4 py-3 border border-border">
                       <div className="flex items-center gap-2 mb-1">
                         <span>{cat?.icon ?? '📝'}</span>
                         <span className="text-sm font-medium">{cat?.name ?? 'Transfer'}</span>
@@ -510,7 +510,7 @@ export default function TransactionsList() {
               setFilterAccount('all');
               setFilterCategory('all');
             }}
-            className="w-full bg-surface text-text-primary border border-border font-semibold py-3.5 rounded-xl active:scale-[0.98] transition-transform mt-4"
+            className="w-full bg-surface text-text-primary border border-border font-semibold py-3.5 rounded-2xl active:scale-[0.98] transition-transform mt-4"
           >
             Reset Filters
           </button>
@@ -525,13 +525,13 @@ export default function TransactionsList() {
               if (txToDelete) handleDeleteTx(txToDelete);
               setTxToDelete(null);
             }}
-            className="w-full bg-expense/10 text-expense py-4 rounded-xl font-bold active:scale-95 transition-transform"
+            className="w-full bg-expense/10 text-expense py-4 rounded-2xl font-bold active:scale-95 transition-transform"
           >
             Delete Transaction
           </button>
           <button 
             onClick={() => setTxToDelete(null)}
-            className="w-full bg-surface text-text-primary py-4 rounded-xl font-bold active:scale-95 transition-transform"
+            className="w-full bg-surface text-text-primary py-4 rounded-2xl font-bold active:scale-95 transition-transform"
           >
             Cancel
           </button>

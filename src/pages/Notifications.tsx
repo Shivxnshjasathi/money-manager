@@ -63,7 +63,7 @@ export default function Notifications() {
       <div className="flex-1 overflow-y-auto pb-8 p-4">
         
         <div className="flex justify-center my-8">
-          <div className={`w-24 h-24 rounded-full flex items-center justify-center transition-colors duration-500 shadow-xl ${enabled ? 'bg-coral shadow-coral/20' : 'bg-surface border border-border'}`}>
+          <div className={`w-24 h-24 rounded-2xl flex items-center justify-center transition-colors duration-500 shadow-xl ${enabled ? 'bg-coral shadow-coral/20' : 'bg-surface border border-border'}`}>
             {enabled ? <BellRing size={40} className="text-bg animate-pulse" /> : <Bell size={40} className="text-text-tertiary" />}
           </div>
         </div>
@@ -73,10 +73,10 @@ export default function Notifications() {
           <p className="text-sm text-text-secondary">Get a gentle nudge at night to log your daily transactions, so you never miss a beat.</p>
         </div>
 
-        <div className="bg-surface/50 rounded-3xl border border-border/50 shadow-sm overflow-hidden mb-6">
+        <div className="bg-surface/50 rounded-2xl border border-border/50 shadow-sm overflow-hidden mb-6">
           <div className="flex items-center justify-between p-5 border-b border-border/50">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-full bg-elevated flex items-center justify-center">
+              <div className="w-10 h-10 rounded-2xl bg-elevated flex items-center justify-center">
                 <Bell size={20} className="text-text-primary" />
               </div>
               <div>
@@ -87,16 +87,16 @@ export default function Notifications() {
             
             <button 
               onClick={handleToggle}
-              className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-300 focus:outline-none ${enabled ? 'bg-coral' : 'bg-elevated'}`}
+              className={`relative inline-flex h-7 w-12 items-center rounded-2xl transition-colors duration-300 focus:outline-none ${enabled ? 'bg-coral' : 'bg-elevated'}`}
             >
-              <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform duration-300 ${enabled ? 'translate-x-6' : 'translate-x-1'}`} />
+              <span className={`inline-block h-5 w-5 transform rounded-2xl bg-white transition-transform duration-300 ${enabled ? 'translate-x-6' : 'translate-x-1'}`} />
             </button>
           </div>
           
           <div className={`transition-all duration-300 overflow-hidden ${enabled ? 'max-h-24 opacity-100' : 'max-h-0 opacity-0'}`}>
             <div className="flex items-center justify-between p-5">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-elevated flex items-center justify-center">
+                <div className="w-10 h-10 rounded-2xl bg-elevated flex items-center justify-center">
                   <Clock size={20} className="text-text-primary" />
                 </div>
                 <span className="text-[16px] font-bold block">Reminder Time</span>
@@ -105,7 +105,7 @@ export default function Notifications() {
                 type="time" 
                 value={time}
                 onChange={handleTimeChange}
-                className="bg-elevated text-text-primary font-bold px-3 py-1.5 rounded-lg border border-border/50 outline-none"
+                className="bg-elevated text-text-primary font-bold px-3 py-1.5 rounded-2xl border border-border/50 outline-none"
               />
             </div>
           </div>

@@ -73,7 +73,7 @@ export default function More() {
     { icon: theme === 'dark' ? Sun : Moon, label: theme === 'dark' ? 'Light Theme' : 'Dark Theme', onClick: toggleTheme },
     { icon: Bell, label: 'Notifications', onClick: () => navigate('/notifications') },
     { icon: ShieldCheck, label: 'Privacy & Security', onClick: () => navigate('/privacy-security') },
-    { icon: ExternalLink, label: 'Schedule a Date (Weekstack App)', onClick: () => window.open('https://weekstack-web.vercel.app/', '_blank') },
+    { icon: ExternalLink, label: 'To-Do List (Weekstack/Hepta)', onClick: () => window.open('https://weekstack-web.vercel.app/', '_blank') },
   ];
 
   return (
@@ -88,8 +88,8 @@ export default function More() {
 
       <div className="flex-1 overflow-y-auto">
         {/* App Info Card */}
-        <div className="mx-4 mt-6 p-5 bg-surface/80 backdrop-blur-xl rounded-3xl border border-border/50 shadow-sm relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-coral/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none" />
+        <div className="mx-4 mt-6 p-5 bg-surface/80 backdrop-blur-xl rounded-2xl border border-border/50 shadow-sm relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-coral/10 rounded-2xl blur-3xl -mr-10 -mt-10 pointer-events-none" />
           <div className="flex items-center gap-4 mb-4 relative z-10">
             <div>
               <h3 className="text-xl font-bold tracking-tight">Manifest</h3>
@@ -117,7 +117,7 @@ export default function More() {
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="mx-4 bg-surface/50 rounded-3xl border border-border/50 shadow-sm overflow-hidden"
+          className="mx-4 bg-surface/50 rounded-2xl border border-border/50 shadow-sm overflow-hidden"
         >
           {menuItems.map((item, idx) => (
             <motion.button
@@ -128,7 +128,7 @@ export default function More() {
               className={`flex items-center w-full px-5 py-4 transition-colors
                 ${idx < menuItems.length - 1 ? 'border-b border-border/50' : ''}`}
             >
-              <div className="w-10 h-10 rounded-full bg-elevated flex items-center justify-center shrink-0 border border-border/50 mr-4 shadow-sm">
+              <div className="w-10 h-10 rounded-2xl bg-elevated flex items-center justify-center shrink-0 border border-border/50 mr-4 shadow-sm">
                 <item.icon size={18} className="text-text-primary" />
               </div>
               <div className="text-left flex-1 min-w-0">
@@ -151,7 +151,7 @@ export default function More() {
                 window.location.reload();
               }
             }}
-            className="w-full flex items-center justify-center gap-2 py-4 rounded-3xl border border-expense/20 bg-expense/5 text-expense font-bold active:bg-expense/10 transition-colors"
+            className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl border border-expense/20 bg-expense/5 text-expense font-bold active:bg-expense/10 transition-colors"
           >
             <Trash2 size={18} />
             <span>Clear All Data</span>
@@ -166,7 +166,7 @@ export default function More() {
             <h4 className="text-sm font-medium text-text-secondary mb-2">By Type</h4>
             <div className="flex gap-2">
               {['All', 'Income', 'Expense', 'Transfer'].map(t => (
-                <button key={t} className="px-4 py-2 bg-elevated rounded-xl text-sm active:bg-coral/20 transition-colors">
+                <button key={t} className="px-4 py-2 bg-elevated rounded-2xl text-sm active:bg-coral/20 transition-colors">
                   {t}
                 </button>
               ))}
@@ -177,7 +177,7 @@ export default function More() {
             <h4 className="text-sm font-medium text-text-secondary mb-2">By Account</h4>
             <div className="flex flex-wrap gap-2">
               {accounts.map(a => (
-                <button key={a.id} className="px-4 py-2 bg-elevated rounded-xl text-sm active:bg-coral/20 transition-colors">
+                <button key={a.id} className="px-4 py-2 bg-elevated rounded-2xl text-sm active:bg-coral/20 transition-colors">
                   {a.name}
                 </button>
               ))}
@@ -188,7 +188,7 @@ export default function More() {
             <h4 className="text-sm font-medium text-text-secondary mb-2">By Category</h4>
             <div className="flex flex-wrap gap-2">
               {categories.map(c => (
-                <button key={c.id} className="px-3 py-2 bg-elevated rounded-xl text-sm active:bg-coral/20 transition-colors flex items-center gap-1">
+                <button key={c.id} className="px-3 py-2 bg-elevated rounded-2xl text-sm active:bg-coral/20 transition-colors flex items-center gap-1">
                   <span>{c.icon}</span>
                   <span>{c.name}</span>
                 </button>
@@ -196,7 +196,7 @@ export default function More() {
             </div>
           </div>
 
-          <button className="w-full bg-coral text-bg py-4 rounded-xl font-semibold active:scale-[0.98] transition-transform mt-2">
+          <button className="w-full bg-coral text-bg py-4 rounded-2xl font-semibold active:scale-[0.98] transition-transform mt-2">
             Apply Filter
           </button>
         </div>

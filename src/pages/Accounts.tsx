@@ -77,7 +77,7 @@ export default function Accounts() {
           <span className="text-lg font-semibold">Accounts</span>
           <button
             onClick={() => setShowAddDrawer(true)}
-            className="w-8 h-8 rounded-full bg-coral text-bg flex items-center justify-center active:scale-95 transition-transform"
+            className="w-8 h-8 rounded-2xl bg-coral text-bg flex items-center justify-center active:scale-95 transition-transform"
           >
             <Plus size={18} />
           </button>
@@ -115,7 +115,7 @@ export default function Accounts() {
             const groupTotal = accs.reduce((s, a) => s + a.computedBalance, 0);
 
             return (
-              <div key={group} className="mt-4 bg-surface/60 backdrop-blur-xl border border-white/10 dark:border-white/5 rounded-[24px] overflow-hidden shadow-xl shadow-black/5">
+              <div key={group} className="mt-4 bg-surface/60 backdrop-blur-xl border border-white/10 dark:border-white/5 rounded-2xl overflow-hidden shadow-xl shadow-black/5">
                 {/* Group Header */}
                 <div className="flex items-center justify-between px-6 py-4 bg-black/5 dark:bg-white/5 border-b border-white/5">
                   <span className="text-sm font-bold text-text-primary tracking-wide">{group}</span>
@@ -196,7 +196,7 @@ export default function Accounts() {
           <button
             onClick={handleAddAccount}
             disabled={!isAccountValid}
-            className="w-full bg-coral text-bg py-4 rounded-xl font-semibold active:scale-[0.98] transition-transform disabled:opacity-50 disabled:active:scale-100"
+            className="w-full bg-coral text-bg py-4 rounded-2xl font-semibold active:scale-[0.98] transition-transform disabled:opacity-50 disabled:active:scale-100"
           >
             Add Account
           </button>

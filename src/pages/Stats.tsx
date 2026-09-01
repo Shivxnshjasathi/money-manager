@@ -90,7 +90,7 @@ export default function Stats() {
           <button
             key={tab}
             onClick={() => setMainTab(tab)}
-            className={`px-5 py-1.5 rounded-full text-sm font-medium transition-all duration-200
+            className={`px-5 py-1.5 rounded-2xl text-sm font-medium transition-all duration-200
               ${mainTab === tab ? 'bg-coral text-bg' : 'text-text-secondary hover:text-text-primary'}`}
           >
             {tab}
@@ -102,14 +102,14 @@ export default function Stats() {
       <div className="flex px-4 py-2 gap-2 shrink-0 border-b border-border/50">
         <button
           onClick={() => setSubTab('Income')}
-          className={`flex-1 py-2 text-[13px] font-bold rounded-full transition-all duration-300 ${subTab === 'Income' ? 'bg-income text-bg shadow-lg shadow-black/10 scale-105' : 'bg-surface/50 text-text-secondary hover:bg-surface'
+          className={`flex-1 py-2 text-[13px] font-bold rounded-2xl transition-all duration-300 ${subTab === 'Income' ? 'bg-income text-bg shadow-lg shadow-black/10 scale-105' : 'bg-surface/50 text-text-secondary hover:bg-surface'
             }`}
         >
           Income {formatINR(totalIncome)}
         </button>
         <button
           onClick={() => setSubTab('Expense')}
-          className={`flex-1 py-2 text-[13px] font-bold rounded-full transition-all duration-300 ${subTab === 'Expense' ? 'bg-expense text-bg shadow-lg shadow-black/10 scale-105' : 'bg-surface/50 text-text-secondary hover:bg-surface'
+          className={`flex-1 py-2 text-[13px] font-bold rounded-2xl transition-all duration-300 ${subTab === 'Expense' ? 'bg-expense text-bg shadow-lg shadow-black/10 scale-105' : 'bg-surface/50 text-text-secondary hover:bg-surface'
             }`}
         >
           Exp. {formatINR(totalExpense)}
@@ -176,7 +176,7 @@ export default function Stats() {
                   className="flex items-center gap-3 bg-surface/50 p-3 rounded-2xl border border-border/30 backdrop-blur-sm"
                 >
                   {/* Color bar */}
-                  <div className="w-1 h-8 rounded-full shrink-0 bg-text-primary" style={{ opacity: item.opacity }} />
+                  <div className="w-1 h-8 rounded-2xl shrink-0 bg-text-primary" style={{ opacity: item.opacity }} />
                   {/* Percent */}
                   <span className="text-sm font-bold w-12 text-right text-text-primary" style={{ opacity: item.opacity }}>
                     {item.percent.toFixed(1)}%
@@ -202,19 +202,19 @@ export default function Stats() {
             animate="visible"
             className="p-4 space-y-4"
           >
-            <motion.div variants={itemVariants} className="bg-surface/80 rounded-[24px] p-5 border border-border shadow-sm">
+            <motion.div variants={itemVariants} className="bg-surface/80 rounded-2xl p-5 border border-border shadow-sm">
               <div className="flex justify-between mb-4">
                 <span className="text-[15px] font-medium text-text-secondary">Monthly Budget</span>
                 <span className="text-[15px] font-bold">{formatINR(monthlyBudget)}</span>
               </div>
 
               {/* Progress bar */}
-              <div className="h-4 bg-elevated rounded-full overflow-hidden mb-3 p-0.5 border border-white/5">
+              <div className="h-4 bg-elevated rounded-2xl overflow-hidden mb-3 p-0.5 border border-white/5">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${budgetPercent}%` }}
                   transition={{ type: 'spring', stiffness: 50, damping: 15, delay: 0.2 }}
-                  className={`h-full rounded-full shadow-sm ${budgetPercent > 80 ? 'bg-expense' : budgetPercent > 50 ? 'bg-transfer' : 'bg-income'
+                  className={`h-full rounded-2xl shadow-sm ${budgetPercent > 80 ? 'bg-expense' : budgetPercent > 50 ? 'bg-transfer' : 'bg-income'
                     }`}
                 />
               </div>
@@ -240,12 +240,12 @@ export default function Stats() {
                     </div>
                     <span className="text-[14px] font-bold text-text-secondary">{formatINR(item.value)}</span>
                   </div>
-                  <div className="h-2.5 bg-elevated rounded-full overflow-hidden">
+                  <div className="h-2.5 bg-elevated rounded-2xl overflow-hidden">
                     <motion.div 
                       initial={{ width: 0 }}
                       animate={{ width: `${catPercent}%` }}
                       transition={{ type: 'spring', stiffness: 50, damping: 15, delay: 0.3 }}
-                      className="h-full rounded-full bg-text-primary" 
+                      className="h-full rounded-2xl bg-text-primary" 
                       style={{ opacity: item.opacity }} 
                     />
                   </div>
