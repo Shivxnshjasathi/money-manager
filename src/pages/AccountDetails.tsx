@@ -83,7 +83,7 @@ export default function AccountDetails() {
       <div className="flex flex-col h-full bg-bg">
         <div className="border-b border-border pt-[env(safe-area-inset-top)]">
           <div className="flex items-center px-4 h-14">
-            <button onClick={() => navigate('/accounts')} className="p-2 -ml-2">
+            <button onClick={() => navigate(-1)} className="p-2 -ml-2">
               <ChevronLeft size={24} />
             </button>
             <span className="font-semibold text-lg ml-2">Account Not Found</span>
@@ -98,7 +98,7 @@ export default function AccountDetails() {
       {/* Header */}
       <div className="pt-[env(safe-area-inset-top)] bg-surface border-b border-border shrink-0 sticky top-0 z-10">
         <div className="flex items-center px-4 h-14">
-          <button onClick={() => navigate('/accounts')} className="p-2 -ml-2 text-text-primary active:scale-95 transition-transform">
+          <button onClick={() => navigate(-1)} className="p-2 -ml-2 text-text-primary active:scale-95 transition-transform">
             <ChevronLeft size={24} />
           </button>
           <div className="ml-2 flex-1">

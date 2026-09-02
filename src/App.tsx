@@ -21,7 +21,8 @@ import PageTransition from './components/PageTransition';
 
 function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
-  const hideNav = location.pathname === '/add' || location.pathname.startsWith('/accounts/') || location.pathname === '/subscriptions';
+  const showNav = ['/transactions', '/stats', '/accounts', '/more'].includes(location.pathname);
+  const hideNav = !showNav;
 
   return (
     <div className="flex justify-center min-h-dvh bg-black">

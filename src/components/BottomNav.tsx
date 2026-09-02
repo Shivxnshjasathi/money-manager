@@ -27,6 +27,7 @@ export default function BottomNav() {
           <NavLink
             key={item.to}
             to={item.to}
+            replace
             onClick={() => playFeedback.tap()}
             className={({ isActive }) =>
               `flex-1 flex flex-col items-center justify-center h-full transition-all duration-300
