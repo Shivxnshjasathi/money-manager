@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, Camera, X, Calendar, Tag, Wallet, FileText, AlignLeft, Repeat, ChevronRight, SplitSquareHorizontal, Wand2, Mic, Layers } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { format } from 'date-fns';
@@ -13,6 +13,7 @@ import { playFeedback } from '../utils/feedback';
 
 export default function AddTransaction() {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
   const categories = useCategories();
   const accounts = useAccountBalances();
 
@@ -47,6 +48,7 @@ export default function AddTransaction() {
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
   const [superCategory, setSuperCategory] = useState<'needs' | 'wants' | 'investment' | ''>('');
   const [showSuperCatPicker, setShowSuperCatPicker] = useState(false);
+  const [existingTx, setExistingTx] = useState<any>(null);
 
   const [showQuickAddAcc, setShowQuickAddAcc] = useState(false);
   const [newAccName, setNewAccName] = useState('');
@@ -71,6 +73,28 @@ export default function AddTransaction() {
     if (result.note) setNote(result.note);
     if (result.categoryId) setSelectedCategory(result.categoryId);
   }, [quickAddText, allTx]);
+
+  // Load existing transaction if in edit mode
+  useEffect(() => {
+    if (!id) return;
+    const loadTx = async () => {
+      const tx = await db.transactions.get(id);
+      if (tx) {
+        setExistingTx(tx);
+        setType(tx.type);
+        setAmount(tx.amount.toString());
+        setDate(tx.date.split('T')[0]);
+        if (tx.category) setSelectedCategory(tx.category);
+        if (tx.accountId) setSelectedAccount(tx.accountId);
+        if (tx.toAccountId) setToAccount(tx.toAccountId);
+        if (tx.note) setNote(tx.note);
+        if (tx.description) setDescription(tx.description);
+        if (tx.attachment) setAttachment(tx.attachment);
+        if (tx.superCategory) setSuperCategory(tx.superCategory);
+      }
+    };
+    loadTx();
+  }, [id]);
 
   const resetForm = () => {
     setAmount('');
@@ -188,9 +212,9 @@ export default function AddTransaction() {
 
     if (type === 'transfer') {
       if (!selectedAccount || !toAccount) return;
-      await db.transactions.add({
-        id: uuidv4(),
-        type: 'transfer',
+      const txData = {
+        id: existingTx ? existingTx.id : uuidv4(),
+        type: 'transfer' as TransactionType,
         amount: finalAmount,
         date: new Date(date).toISOString(),
         category: '',
@@ -200,12 +224,17 @@ export default function AddTransaction() {
         description: finalDescription,
         attachment,
         recurringId,
-        createdAt: Date.now(),
-      });
+        createdAt: existingTx ? existingTx.createdAt : Date.now(),
+      };
+      if (existingTx) {
+        await db.transactions.put(txData);
+      } else {
+        await db.transactions.add(txData);
+      }
     } else {
       if (!selectedCategory) return;
-      await db.transactions.add({
-        id: uuidv4(),
+      const txData = {
+        id: existingTx ? existingTx.id : uuidv4(),
         type,
         amount: type === 'expense' ? myShare : finalAmount,
         date: new Date(date).toISOString(),
@@ -216,8 +245,13 @@ export default function AddTransaction() {
         attachment,
         superCategory: superCategory !== '' ? superCategory : undefined,
         recurringId,
-        createdAt: Date.now(),
-      });
+        createdAt: existingTx ? existingTx.createdAt : Date.now(),
+      };
+      if (existingTx) {
+        await db.transactions.put(txData);
+      } else {
+        await db.transactions.add(txData);
+      }
 
       // Splitting logic: record the debt
       if (isSplit && friendShareNum > 0 && type === 'expense') {
@@ -275,7 +309,7 @@ export default function AddTransaction() {
                 <button onClick={() => navigate(-1)} className="p-1">
                   <ChevronLeft size={28} />
                 </button>
-                <span className="text-lg font-semibold capitalize">Add {type}</span>
+                <span className="text-lg font-semibold capitalize">{existingTx ? 'Edit' : 'Add'} {type}</span>
                 <button onClick={() => setIsSmartAddExpanded(true)} className="p-1">
                   <Wand2 size={22} className="text-coral" />
                 </button>
@@ -431,25 +465,6 @@ export default function AddTransaction() {
             </button>
           )}
 
-          {/* Super Category Row */}
-          {type !== 'transfer' && (
-            <button onClick={() => setShowSuperCatPicker(true)} className="w-full flex items-center py-3.5 px-4 border-b border-border/30 text-left active:bg-elevated transition-colors">
-              <div className="w-9 h-9 rounded-xl bg-elevated flex items-center justify-center text-text-primary mr-4 shrink-0 shadow-sm border border-border/50">
-                <Layers size={18} />
-              </div>
-              <div className="flex-1 flex items-center justify-between min-w-0 pr-2">
-                <span className="text-[15px] font-medium text-text-primary">Super Category</span>
-                {superCategory ? (
-                  <span className="text-[15px] font-medium text-text-secondary flex items-center gap-1.5 capitalize">
-                    {superCategory}
-                  </span>
-                ) : (
-                  <span className="text-[15px] font-medium text-text-tertiary">Select (Optional)</span>
-                )}
-              </div>
-              <ChevronRight size={18} className="text-text-tertiary shrink-0" />
-            </button>
-          )}
 
           {/* Account Row */}
           <button onClick={() => setShowAccPicker(true)} className="w-full flex items-center py-3.5 px-4 border-b border-border/30 text-left active:bg-elevated transition-colors">
@@ -486,6 +501,26 @@ export default function AddTransaction() {
                 transition={{ duration: 0.3, ease: "easeInOut" }}
                 className="overflow-hidden flex flex-col"
               >
+                {/* Super Category Row */}
+                {type !== 'transfer' && (
+                  <button onClick={() => setShowSuperCatPicker(true)} className="w-full flex items-center py-3.5 px-4 border-b border-border/30 text-left active:bg-elevated transition-colors">
+                    <div className="w-9 h-9 rounded-xl bg-elevated flex items-center justify-center text-text-primary mr-4 shrink-0 shadow-sm border border-border/50">
+                      <Layers size={18} />
+                    </div>
+                    <div className="flex-1 flex items-center justify-between min-w-0 pr-2">
+                      <span className="text-[15px] font-medium text-text-primary">Super Category</span>
+                      {superCategory ? (
+                        <span className="text-[15px] font-medium text-text-secondary flex items-center gap-1.5 capitalize">
+                          {superCategory}
+                        </span>
+                      ) : (
+                        <span className="text-[15px] font-medium text-text-tertiary">Select (Optional)</span>
+                      )}
+                    </div>
+                    <ChevronRight size={18} className="text-text-tertiary shrink-0" />
+                  </button>
+                )}
+
                 {/* Note Row */}
                 <div className="flex items-center py-3.5 px-4 border-b border-border/30">
                   <div className="w-9 h-9 rounded-xl bg-elevated flex items-center justify-center text-text-primary mr-4 shrink-0 shadow-sm border border-border/50">
@@ -630,7 +665,7 @@ export default function AddTransaction() {
                 : 'bg-surface/80 border border-border/50 text-text-tertiary opacity-50'
               }`}
           >
-            Save Transaction
+            {existingTx ? 'Update Transaction' : 'Save Transaction'}
           </motion.button>
         </div>
       </div>
@@ -648,12 +683,6 @@ export default function AddTransaction() {
               <span className="text-sm font-medium capitalize">{scat}</span>
             </button>
           ))}
-          <button
-            onClick={() => { setSuperCategory(''); setShowSuperCatPicker(false); }}
-            className={`flex flex-col items-start w-full px-4 py-3 rounded-2xl transition-all active:scale-[0.98] mt-4 border border-border/50 bg-bg`}
-          >
-            <span className="text-sm font-medium text-text-secondary">Clear / None</span>
-          </button>
         </div>
       </Drawer>
 
@@ -700,14 +729,6 @@ export default function AddTransaction() {
                 </div>
               </button>
             ))
-          )}
-          {type !== 'transfer' && (
-            <button
-              onClick={() => { setSelectedAccount(''); setShowAccPicker(false); }}
-              className={`flex flex-col items-start w-full px-4 py-3 rounded-2xl transition-all active:scale-[0.98] mt-4 border border-border/50 bg-bg`}
-            >
-              <span className="text-sm font-medium text-text-secondary">Clear / None</span>
-            </button>
           )}
           <button
             onClick={() => {

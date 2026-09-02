@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { format, addMonths, subMonths, isSameDay } from 'date-fns';
-import { Search, X, Trash2 } from 'lucide-react';
+import { Search, X, Trash2, Pencil } from 'lucide-react';
 import TopBar from '../components/TopBar';
 import Tabs from '../components/Tabs';
 import TransactionItem from '../components/TransactionItem';
@@ -24,6 +25,7 @@ const listVariants: Variants = {
 };
 
 export default function TransactionsList() {
+  const navigate = useNavigate();
   const [monthDate, setMonthDate] = useState(new Date());
   const [activeTab, setActiveTab] = useState('Daily');
   const [calSelectedDate, setCalSelectedDate] = useState<Date | null>(null);
@@ -263,6 +265,8 @@ export default function TransactionsList() {
                           else next.add(tx.id);
                           if (next.size === 0) setSelectionMode(false);
                           setSelectedTxs(next);
+                        } else {
+                          navigate(`/edit/${tx.id}`);
                         }
                       }}
                       selectionMode={selectionMode}
@@ -375,6 +379,8 @@ export default function TransactionsList() {
                               else next.add(tx.id);
                               if (next.size === 0) setSelectionMode(false);
                               setSelectedTxs(next);
+                            } else {
+                              navigate(`/edit/${tx.id}`);
                             }
                           }}
                           selectionMode={selectionMode}
@@ -435,6 +441,8 @@ export default function TransactionsList() {
                                 else next.add(tx.id);
                                 if (next.size === 0) setSelectionMode(false);
                                 setSelectedTxs(next);
+                              } else {
+                                navigate(`/edit/${tx.id}`);
                               }
                             }}
                             selectionMode={selectionMode}
@@ -636,7 +644,7 @@ export default function TransactionsList() {
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
-            className="fixed bottom-0 left-0 right-0 p-4 bg-surface/90 backdrop-blur-md border-t border-border z-50 flex items-center justify-between pb-[calc(1rem+env(safe-area-inset-bottom))]"
+            className="absolute bottom-0 left-0 right-0 p-4 bg-surface/95 backdrop-blur-xl border-t border-border z-[60] flex items-center justify-between pb-[calc(1rem+env(safe-area-inset-bottom))]"
           >
             <span className="font-semibold text-text-primary text-sm">{selectedTxs.size} Selected</span>
             <div className="flex gap-3">
@@ -649,6 +657,17 @@ export default function TransactionsList() {
               >
                 Cancel
               </button>
+              {selectedTxs.size === 1 && (
+                <button 
+                  onClick={() => {
+                    const id = Array.from(selectedTxs)[0];
+                    navigate(`/edit/${id}`);
+                  }}
+                  className="px-4 py-2 font-semibold text-bg bg-text-primary rounded-xl flex items-center gap-2 text-sm"
+                >
+                  <Pencil size={16} /> Edit
+                </button>
+              )}
               <button 
                 onClick={async () => {
                   if (confirm(`Delete ${selectedTxs.size} transaction(s)?`)) {

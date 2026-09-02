@@ -1,8 +1,9 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings, Filter, Moon, Sun, Bell, ShieldCheck, ChevronRight, PieChart, FileDown, Trash2, Footprints, ExternalLink, Repeat } from 'lucide-react';
+import { Settings, Filter, Moon, Sun, Bell, ShieldCheck, ChevronRight, PieChart, FileDown, FileUp, Trash2, Footprints, ExternalLink, Repeat } from 'lucide-react';
 import Drawer from '../components/Drawer';
-import { resetAllData } from '../db';
+import { resetAllData, db } from '../db';
+import { v4 as uuidv4 } from 'uuid';
 import { useAllTransactions, useAccounts, useCategories, useTheme } from '../hooks';
 import { motion, type Variants } from 'framer-motion';
 
@@ -63,6 +64,98 @@ export default function More() {
     URL.revokeObjectURL(url);
   }, [transactions, categories, accounts]);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImportCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const text = event.target?.result as string;
+      if (!text) return;
+      
+      const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      if (lines.length <= 1) return; // Only header or empty
+      
+      const parsedTransactions = [];
+      const allAccs = await db.accounts.toArray();
+      const allCats = await db.categories.toArray();
+      
+      for (let i = 1; i < lines.length; i++) {
+        const row = [];
+        let cur = '';
+        let inQuote = false;
+        for (let j = 0; j < lines[i].length; j++) {
+          const char = lines[i][j];
+          if (char === '"') {
+            inQuote = !inQuote;
+          } else if (char === ',' && !inQuote) {
+            row.push(cur);
+            cur = '';
+          } else {
+            cur += char;
+          }
+        }
+        row.push(cur);
+        
+        if (row.length < 5) continue;
+        
+        const [dateStr, type, amountStr, catName, accName, note, description] = row;
+        const lowerType = type.toLowerCase();
+        
+        // Find or create account
+        let account = allAccs.find(a => a.name.toLowerCase() === accName.toLowerCase());
+        if (!account && accName) {
+          account = { id: uuidv4(), name: accName, group: 'Others', balance: 0, settlementDate: 1, paymentDate: 1 };
+          await db.accounts.add(account);
+          allAccs.push(account);
+        }
+        
+        // Find or create category
+        let category = allCats.find(c => c.name.toLowerCase() === catName.toLowerCase() && c.type === lowerType);
+        if (!category && catName && lowerType !== 'transfer') {
+          category = { id: uuidv4(), name: catName, type: lowerType as any, icon: '📦' };
+          await db.categories.add(category);
+          allCats.push(category);
+        }
+
+        const dateParts = dateStr.split('/');
+        let isoDate = new Date().toISOString();
+        if (dateParts.length === 3) {
+          // Assuming DD/MM/YYYY
+          isoDate = new Date(`${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`).toISOString();
+        } else if (!isNaN(Date.parse(dateStr))) {
+          isoDate = new Date(dateStr).toISOString();
+        }
+
+        parsedTransactions.push({
+          id: uuidv4(),
+          type: lowerType as any,
+          amount: parseFloat(amountStr) || 0,
+          date: isoDate,
+          category: category?.id || '',
+          accountId: account?.id || '',
+          note: note || '',
+          description: description || '',
+          createdAt: Date.now() + i
+        });
+      }
+      
+      if (parsedTransactions.length > 0) {
+        await db.transactions.bulkAdd(parsedTransactions);
+        alert(`Successfully imported ${parsedTransactions.length} transactions!`);
+      } else {
+        alert('No valid transactions found to import.');
+      }
+      
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    };
+    reader.readAsText(file);
+  };
+
   const navigate = useNavigate();
 
   const menuItems: Array<{ icon: any; label: string; onClick: () => void }> = [
@@ -70,6 +163,7 @@ export default function More() {
     { icon: Footprints, label: 'Savings Goals', onClick: () => navigate('/goals') },
     { icon: Repeat, label: 'Subscriptions & Bills', onClick: () => navigate('/subscriptions') },
     { icon: FileDown, label: 'Export to CSV', onClick: handleExportCSV },
+    { icon: FileUp, label: 'Import from CSV', onClick: () => fileInputRef.current?.click() },
     { icon: Filter, label: 'Filter Transactions', onClick: () => setShowFilterDrawer(true) },
     { icon: theme === 'dark' ? Sun : Moon, label: theme === 'dark' ? 'Light Theme' : 'Dark Theme', onClick: toggleTheme },
     { icon: Bell, label: 'Notifications', onClick: () => navigate('/notifications') },
@@ -79,6 +173,13 @@ export default function More() {
 
   return (
     <div className="flex flex-col h-full w-full bg-bg">
+      <input 
+        type="file" 
+        accept=".csv" 
+        ref={fileInputRef} 
+        onChange={handleImportCSV} 
+        className="hidden" 
+      />
       {/* Header */}
       <div className="bg-bg pt-[env(safe-area-inset-top)] shrink-0">
         <div className="flex items-center px-4 h-12 gap-3">

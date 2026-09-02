@@ -159,13 +159,13 @@ export default function Stats() {
       />
 
       {/* Main Tab Selector (Pill style) */}
-      <div className="flex justify-center py-2 gap-2 shrink-0">
-        {['Stats', 'Insights', 'Budget', 'Note'].map(tab => (
+      <div className="flex overflow-x-auto scrollbar-hide py-3 px-4 gap-2 shrink-0 border-b border-border/50">
+        {['Stats', 'Insights', 'Budget', 'Super Category', 'Note'].map(tab => (
           <button
             key={tab}
             onClick={() => setMainTab(tab)}
-            className={`px-5 py-1.5 rounded-2xl text-[13px] font-bold transition-all duration-200
-              ${mainTab === tab ? 'bg-coral text-bg shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}
+            className={`whitespace-nowrap px-5 py-1.5 rounded-2xl text-[13px] font-bold transition-all duration-200 shrink-0
+              ${mainTab === tab ? 'bg-coral text-bg shadow-sm' : 'text-text-secondary hover:text-text-primary bg-surface/50 hover:bg-surface'}`}
           >
             {tab}
           </button>
@@ -395,6 +395,69 @@ export default function Stats() {
               </div>
             </motion.div>
 
+          </motion.div>
+        )}
+
+        {/* ─── Super Category View ─── */}
+        {mainTab === 'Super Category' && (
+          <motion.div 
+            variants={listVariants}
+            initial="hidden"
+            animate="visible"
+            className="p-4 space-y-4"
+          >
+            {(() => {
+              const scMap: Record<string, number> = { needs: 0, wants: 0, investment: 0, uncategorized: 0 };
+              let total = 0;
+              transactions.forEach(tx => {
+                if (tx.type === 'expense') {
+                  const sc = tx.superCategory || 'uncategorized';
+                  scMap[sc] = (scMap[sc] || 0) + tx.amount;
+                  total += tx.amount;
+                }
+              });
+              
+              if (total === 0) {
+                return <div className="text-center text-text-secondary text-sm pt-10">No expenses to categorize</div>;
+              }
+
+              const scIcons: Record<string, string> = {
+                needs: '🏠',
+                wants: '🛍️',
+                investment: '📈',
+                uncategorized: '❓'
+              };
+
+              return Object.entries(scMap)
+                .filter(([_, val]) => val > 0)
+                .sort((a, b) => b[1] - a[1])
+                .map(([key, val], idx) => {
+                  const percent = (val / total) * 100;
+                  return (
+                    <motion.div key={key} variants={itemVariants} className="bg-surface/50 rounded-2xl p-4 border border-border/50">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xl">{scIcons[key] || '📦'}</span>
+                          <span className="text-[15px] font-medium capitalize">{key}</span>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-[14px] font-bold text-text-primary">{formatINR(val)}</div>
+                          <div className="text-[11px] font-bold text-text-secondary">{percent.toFixed(1)}%</div>
+                        </div>
+                      </div>
+                      <div className="h-2.5 bg-elevated rounded-2xl overflow-hidden">
+                        <motion.div 
+                          initial={{ width: 0 }}
+                          animate={{ width: `${percent}%` }}
+                          transition={{ type: 'spring', stiffness: 50, damping: 15, delay: 0.3 }}
+                          className="h-full rounded-2xl bg-coral"
+                          style={{ opacity: getSliceOpacity(idx) }}
+                        />
+                      </div>
+                    </motion.div>
+                  );
+                });
+            })()}
           </motion.div>
         )}
 

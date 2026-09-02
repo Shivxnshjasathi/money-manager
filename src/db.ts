@@ -59,6 +59,7 @@ const DEFAULT_EXPENSE_CATEGORIES: Omit<ICategory, 'id'>[] = [
   { name: 'Health', icon: '🧘', type: 'expense' },
   { name: 'Education', icon: '📙', type: 'expense' },
   { name: 'Gift', icon: '🎁', type: 'expense' },
+  { name: 'Groceries', icon: '🛒', type: 'expense' },
   { name: 'Other', icon: '📝', type: 'expense' },
 ];
 
@@ -71,11 +72,15 @@ const DEFAULT_INCOME_CATEGORIES: Omit<ICategory, 'id'>[] = [
 ];
 
 export async function seedDatabase() {
-  const catCount = await db.categories.count();
-  if (catCount === 0) {
-    const allCats = [...DEFAULT_EXPENSE_CATEGORIES, ...DEFAULT_INCOME_CATEGORIES]
-      .map(c => ({ ...c, id: uuidv4() }));
-    await db.categories.bulkAdd(allCats);
+  const existingCats = await db.categories.toArray();
+  const allDefaultCats = [...DEFAULT_EXPENSE_CATEGORIES, ...DEFAULT_INCOME_CATEGORIES];
+  
+  const missingCats = allDefaultCats.filter(defaultCat => 
+    !existingCats.some(c => c.name === defaultCat.name && c.type === defaultCat.type)
+  ).map(c => ({ ...c, id: uuidv4() }));
+
+  if (missingCats.length > 0) {
+    await db.categories.bulkAdd(missingCats);
   }
 }
 

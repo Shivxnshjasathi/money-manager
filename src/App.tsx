@@ -48,13 +48,14 @@ function AppRoutes() {
         <Route path="/stats" element={<PageTransition><Stats /></PageTransition>} />
         <Route path="/accounts" element={<PageTransition><Accounts /></PageTransition>} />
         <Route path="/accounts/:id" element={<PageTransition><AccountDetails /></PageTransition>} />
+        <Route path="/add" element={<PageTransition><AddTransaction /></PageTransition>} />
+        <Route path="/edit/:id" element={<PageTransition><AddTransaction /></PageTransition>} />
         <Route path="/more" element={<PageTransition><More /></PageTransition>} />
         <Route path="/budgets" element={<PageTransition><Budgets /></PageTransition>} />
         <Route path="/goals" element={<PageTransition><Goals /></PageTransition>} />
         <Route path="/notifications" element={<PageTransition><Notifications /></PageTransition>} />
         <Route path="/privacy-security" element={<PageTransition><PrivacySecurity /></PageTransition>} />
         <Route path="/subscriptions" element={<PageTransition><Subscriptions /></PageTransition>} />
-        <Route path="/add" element={<PageTransition><AddTransaction /></PageTransition>} />
       </Routes>
     </AnimatePresence>
   );
