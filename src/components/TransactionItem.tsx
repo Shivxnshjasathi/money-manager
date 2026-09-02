@@ -56,7 +56,6 @@ export default function TransactionItem({ transaction: tx, categories, accounts,
   // ensure initial state
   useEffect(() => {
     controls.set({ x: 0 });
-    controls.start("visible");
   }, [controls]);
 
   const handleDragEnd = (_event: any, info: PanInfo) => {
@@ -78,7 +77,7 @@ export default function TransactionItem({ transaction: tx, categories, accounts,
   };
 
   return (
-    <div className="relative w-full rounded-2xl mb-1.5 overflow-hidden group">
+    <motion.div variants={itemVariants} className="relative w-full rounded-2xl mb-1.5 overflow-hidden group">
       {/* Background Delete Action */}
       <div 
         className="absolute inset-0 bg-elevated rounded-2xl border border-border/50 flex items-center justify-end pr-7 text-text-tertiary hover:text-coral cursor-pointer transition-colors"
@@ -88,9 +87,7 @@ export default function TransactionItem({ transaction: tx, categories, accounts,
       </div>
 
       <motion.div
-        variants={itemVariants}
         layout
-        initial="hidden"
         animate={controls}
         drag="x"
         dragConstraints={{ left: showDelete ? -80 : 0, right: 0 }}
@@ -152,6 +149,6 @@ export default function TransactionItem({ transaction: tx, categories, accounts,
           </div>
         </motion.button>
       </motion.div>
-    </div>
+    </motion.div>
   );
 }

@@ -20,6 +20,16 @@ export const useTheme = create<ThemeState>((set) => ({
   }),
 }));
 
+interface UIState {
+  isScrollingDown: boolean;
+  setIsScrollingDown: (isDown: boolean) => void;
+}
+
+export const useUIStore = create<UIState>((set) => ({
+  isScrollingDown: false,
+  setIsScrollingDown: (isDown) => set({ isScrollingDown: isDown }),
+}));
+
 export function useGoals() {
   return useLiveQuery(() => db.goals.toArray(), []) ?? [];
 }

@@ -6,7 +6,7 @@ import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import Drawer from '../components/Drawer';
 import { db } from '../db';
-import type { TransactionType, IAccount } from '../types';
+import type { TransactionType, IAccount, AccountGroup } from '../types';
 import { useCategories, useAccountBalances, useAllTransactions, useSpeechRecognition } from '../hooks';
 import { parseQuickAdd } from '../nlp';
 import { playFeedback } from '../utils/feedback';
@@ -43,6 +43,12 @@ export default function AddTransaction() {
   const [showCatPicker, setShowCatPicker] = useState(false);
   const [showAccPicker, setShowAccPicker] = useState(false);
   const [showToAccPicker, setShowToAccPicker] = useState(false);
+  
+  const [showQuickAddAcc, setShowQuickAddAcc] = useState(false);
+  const [newAccName, setNewAccName] = useState('');
+  const [newAccBalance, setNewAccBalance] = useState('');
+  const [newAccGroup, setNewAccGroup] = useState<AccountGroup>('Bank Accounts');
+  const ACCOUNT_GROUPS_ORDER: AccountGroup[] = ['Cash', 'Bank Accounts', 'Card', 'Debit Card', 'Savings', 'Top-Up/Prepaid', 'Investments', 'Overdrafts', 'Loan', 'Insurance', 'Others'];
 
   const filteredCats = useMemo(() => {
     return categories.filter(c => c.type === type);
@@ -105,6 +111,26 @@ export default function AddTransaction() {
       img.src = event.target?.result as string;
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleQuickAddAccount = async () => {
+    if (!newAccName.trim()) return;
+    const newAccId = uuidv4();
+    await db.accounts.add({
+      id: newAccId,
+      name: newAccName.trim(),
+      group: newAccGroup,
+      balance: Number(newAccBalance) || 0,
+      settlementDate: 1,
+      paymentDate: 1,
+    });
+    setNewAccName('');
+    setNewAccBalance('');
+    setShowQuickAddAcc(false);
+    setSelectedAccount(newAccId);
+    if (showAccPicker) setShowAccPicker(false);
+    if (showToAccPicker) setShowToAccPicker(false);
+    playFeedback.success();
   };
 
   const handleSave = async (andContinue: boolean = false) => {
@@ -248,11 +274,11 @@ export default function AddTransaction() {
             ) : (
               <motion.div 
                 key="input"
-                initial={{ opacity: 0, width: '40px' }}
-                animate={{ opacity: 1, width: 'calc(100% - 2rem)' }}
-                exit={{ opacity: 0, width: '40px' }}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
                 transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                className="absolute right-4 flex items-center bg-surface border border-coral rounded-full pl-4 pr-2 py-1.5 shadow-[0_0_20px_rgba(255,255,255,0.05)] h-10 top-2"
+                className="absolute inset-x-4 flex items-center bg-surface border border-coral rounded-full pl-4 pr-2 py-1.5 shadow-[0_0_20px_rgba(255,255,255,0.05)] h-10 top-2"
               >
                 <Wand2 size={18} className="text-coral mr-3 shrink-0" />
                 <input
@@ -549,20 +575,24 @@ export default function AddTransaction() {
       {/* Floating Save Button */}
       <div className="fixed bottom-0 left-0 right-0 p-4 pb-[calc(16px+env(safe-area-inset-bottom))] bg-gradient-to-t from-bg via-bg/80 to-transparent pointer-events-none z-20">
         <div className="max-w-[440px] mx-auto pointer-events-auto">
-          <button
+          <motion.button
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ type: "spring", damping: 20, stiffness: 200, delay: 0.3 }}
+            whileTap={{ scale: 0.95 }}
             onClick={() => {
               const isValid = amount.length > 0 && parseFloat(amount) > 0 && selectedAccount && (type === 'transfer' ? toAccount : selectedCategory);
               if (isValid) handleSave(false);
             }}
             disabled={!(amount.length > 0 && parseFloat(amount) > 0 && selectedAccount && (type === 'transfer' ? toAccount : selectedCategory))}
-            className={`w-full py-4 rounded-2xl font-semibold transition-all active:scale-[0.98] shadow-lg backdrop-blur-xl ${
+            className={`w-full py-4 rounded-2xl font-semibold transition-colors shadow-lg backdrop-blur-xl ${
               (amount.length > 0 && parseFloat(amount) > 0 && selectedAccount && (type === 'transfer' ? toAccount : selectedCategory))
                 ? 'bg-coral text-bg shadow-coral/20'
                 : 'bg-surface/80 border border-border/50 text-text-tertiary opacity-50'
             }`}
           >
             Save Transaction
-          </button>
+          </motion.button>
         </div>
       </div>
 
@@ -610,6 +640,15 @@ export default function AddTransaction() {
               </button>
             ))
           )}
+          <button
+            onClick={() => {
+              setShowAccPicker(false);
+              setShowQuickAddAcc(true);
+            }}
+            className="w-full flex items-center justify-center gap-2 bg-surface border border-dashed border-border/50 text-coral font-medium py-3 rounded-2xl mt-2 active:scale-[0.98] transition-transform"
+          >
+            <span className="text-xl">+</span> Add New Account
+          </button>
         </div>
       </Drawer>
 
@@ -640,6 +679,55 @@ export default function AddTransaction() {
               </button>
             ))
           )}
+        </div>
+      </Drawer>
+
+      {/* Quick Add Account Drawer */}
+      <Drawer open={showQuickAddAcc} onClose={() => setShowQuickAddAcc(false)} title="New Account">
+        <div className="p-4 space-y-4">
+          <div>
+            <label className="text-[11px] font-bold text-text-secondary ml-1 uppercase tracking-wider block mb-1.5">Account Name</label>
+            <input
+              type="text"
+              value={newAccName}
+              onChange={e => setNewAccName(e.target.value)}
+              placeholder="e.g. Cash Wallet"
+              className="input-premium"
+            />
+          </div>
+          <div>
+            <label className="text-[11px] font-bold text-text-secondary ml-1 uppercase tracking-wider block mb-1.5">Group</label>
+            <select
+              value={newAccGroup}
+              onChange={e => setNewAccGroup(e.target.value as AccountGroup)}
+              className="input-premium"
+            >
+              {ACCOUNT_GROUPS_ORDER.map(g => (
+                <option key={g} value={g}>{g}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-[11px] font-bold text-text-secondary ml-1 uppercase tracking-wider block mb-1.5">Initial Balance</label>
+            <div className="input-premium-wrapper">
+              <span className="text-lg font-bold text-text-secondary mr-2">₹</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={newAccBalance}
+                onChange={e => setNewAccBalance(e.target.value)}
+                placeholder="0"
+                className="font-semibold text-lg"
+              />
+            </div>
+          </div>
+          <button
+            onClick={handleQuickAddAccount}
+            disabled={!newAccName.trim()}
+            className="w-full bg-coral text-bg py-4 rounded-2xl font-bold active:scale-[0.98] transition-transform disabled:opacity-50"
+          >
+            Create Account
+          </button>
         </div>
       </Drawer>
     </div>

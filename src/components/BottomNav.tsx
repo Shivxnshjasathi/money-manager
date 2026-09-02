@@ -2,6 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { CalendarDays, PieChart, Wallet, MoreHorizontal, Plus } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { playFeedback } from '../utils/feedback';
+import { useUIStore } from '../hooks';
 
 const navItems = [
   { to: '/transactions', icon: CalendarDays, label: 'Trans.' },
@@ -12,9 +13,15 @@ const navItems = [
 
 export default function BottomNav() {
   const navigate = useNavigate();
+  const isScrollingDown = useUIStore(s => s.isScrollingDown);
 
   return (
-    <div className="absolute bottom-4 left-5 right-5 pointer-events-none z-50">
+    <motion.div 
+      initial={false}
+      animate={{ y: isScrollingDown ? 150 : 0, opacity: isScrollingDown ? 0 : 1 }}
+      transition={{ type: "spring", damping: 25, stiffness: 200 }}
+      className="absolute bottom-4 left-5 right-5 pointer-events-none z-50"
+    >
       <nav className="relative flex items-center justify-between px-4 h-12 bg-surface/95 backdrop-blur-3xl border border-border rounded-full shadow-[0_8px_32px_-4px_rgba(0,0,0,0.4)] pointer-events-auto w-full max-w-md mx-auto">
         {navItems.map((item, idx) => (
           <NavLink
@@ -65,6 +72,6 @@ export default function BottomNav() {
           </motion.button>
         </div>
       </nav>
-    </div>
+    </motion.div>
   );
 }

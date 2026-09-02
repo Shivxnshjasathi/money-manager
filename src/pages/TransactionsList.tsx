@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { format, addMonths, subMonths, isSameDay } from 'date-fns';
 import { Search, X } from 'lucide-react';
 import TopBar from '../components/TopBar';
@@ -6,7 +6,7 @@ import Tabs from '../components/Tabs';
 import TransactionItem from '../components/TransactionItem';
 import CalendarView from '../components/CalendarView';
 import Drawer from '../components/Drawer';
-import { useTransactions, useAccounts, useCategories, useAllTransactions, formatINR, getCategoryById, getAccountById } from '../hooks';
+import { useTransactions, useAccounts, useCategories, useAllTransactions, formatINR, getCategoryById, getAccountById, useUIStore } from '../hooks';
 import { deleteTransaction } from '../db';
 import type { ITransaction } from '../types';
 import { motion, type Variants } from 'framer-motion';
@@ -34,7 +34,9 @@ export default function TransactionsList() {
   const [filterAccount, setFilterAccount] = useState<string>('all');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [txToDelete, setTxToDelete] = useState<string | null>(null);
-  const [isScrolled, setIsScrolled] = useState(false);
+  const { isScrollingDown, setIsScrollingDown } = useUIStore();
+  const lastScrollY = useRef(0);
+  const scrollLock = useRef(false);
 
   const rawTransactions = useTransactions(monthDate);
   const allTransactions = useAllTransactions();
@@ -237,7 +239,7 @@ export default function TransactionsList() {
         onSearch={() => setSearchOpen(true)}
         showFilter
         onFilter={() => setFilterOpen(true)}
-        isScrolled={isScrolled}
+        isScrolled={isScrollingDown}
       />
 
       <Tabs tabs={VIEW_TABS} active={activeTab} onChange={setActiveTab} />
@@ -246,7 +248,24 @@ export default function TransactionsList() {
         className="flex-1 overflow-y-auto"
         onScroll={(e) => {
           const target = e.target as HTMLDivElement;
-          setIsScrolled(target.scrollTop > 20);
+          const currentScrollY = target.scrollTop;
+          
+          if (scrollLock.current) {
+            lastScrollY.current = currentScrollY;
+            return;
+          }
+          
+          if (currentScrollY > lastScrollY.current + 15 && currentScrollY > 60) {
+            setIsScrollingDown(true);
+            lastScrollY.current = currentScrollY;
+            scrollLock.current = true;
+            setTimeout(() => { scrollLock.current = false; }, 350);
+          } else if (currentScrollY < lastScrollY.current - 15 || currentScrollY <= 60) {
+            setIsScrollingDown(false);
+            lastScrollY.current = currentScrollY;
+            scrollLock.current = true;
+            setTimeout(() => { scrollLock.current = false; }, 350);
+          }
         }}
       >
         {/* ─── Daily View ─── */}
