@@ -22,8 +22,9 @@ export default function AddTransaction() {
   const [isSmartAddExpanded, setIsSmartAddExpanded] = useState(false);
   const { isListening, setIsListening } = useSpeechRecognition(setQuickAddText);
   
-  const [currency] = useState('INR');
+  const [currency, setCurrency] = useState('INR');
   const RATES: Record<string, number> = { INR: 1, USD: 83.5, EUR: 90.2, GBP: 105.4, AED: 22.7, JPY: 0.55 };
+  const CURRENCY_SYMBOLS: Record<string, string> = { INR: '₹', USD: '$', EUR: '€', GBP: '£', AED: 'د.إ', JPY: '¥' };
 
   const [isSplit, setIsSplit] = useState(false);
   const [friendShare, setFriendShare] = useState('');
@@ -43,12 +44,13 @@ export default function AddTransaction() {
   const [showCatPicker, setShowCatPicker] = useState(false);
   const [showAccPicker, setShowAccPicker] = useState(false);
   const [showToAccPicker, setShowToAccPicker] = useState(false);
+  const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
   
   const [showQuickAddAcc, setShowQuickAddAcc] = useState(false);
   const [newAccName, setNewAccName] = useState('');
   const [newAccBalance, setNewAccBalance] = useState('');
   const [newAccGroup, setNewAccGroup] = useState<AccountGroup>('Bank Accounts');
-  const ACCOUNT_GROUPS_ORDER: AccountGroup[] = ['Cash', 'Bank Accounts', 'Card', 'Debit Card', 'Savings', 'Top-Up/Prepaid', 'Investments', 'Overdrafts', 'Loan', 'Insurance', 'Others'];
+  const ACCOUNT_GROUPS_ORDER: AccountGroup[] = ['Cash', 'Bank Accounts', 'Credit Card', 'Card', 'Debit Card', 'Savings', 'Top-Up/Prepaid', 'Investments', 'Overdrafts', 'Loan', 'Insurance', 'Others'];
 
   const filteredCats = useMemo(() => {
     return categories.filter(c => c.type === type);
@@ -120,7 +122,7 @@ export default function AddTransaction() {
       id: newAccId,
       name: newAccName.trim(),
       group: newAccGroup,
-      balance: Number(newAccBalance) || 0,
+      balance: newAccGroup === 'Credit Card' ? 0 : (Number(newAccBalance) || 0),
       settlementDate: 1,
       paymentDate: 1,
     });
@@ -278,7 +280,7 @@ export default function AddTransaction() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
                 transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                className="absolute inset-x-4 flex items-center bg-surface border border-coral rounded-full pl-4 pr-2 py-1.5 shadow-[0_0_20px_rgba(255,255,255,0.05)] h-10 top-2"
+                className="w-full flex items-center bg-surface border border-coral rounded-full pl-4 pr-2 py-1.5 shadow-[0_0_20px_rgba(255,255,255,0.05)] h-10"
               >
                 <Wand2 size={18} className="text-coral mr-3 shrink-0" />
                 <input
@@ -344,7 +346,9 @@ export default function AddTransaction() {
       >
         <div className="flex-1 flex flex-col items-center">
           <div className="flex items-center justify-center w-full px-4 sm:px-8">
-            <span className="text-3xl sm:text-4xl font-medium text-text-tertiary mr-1 pb-1">₹</span>
+            <button onClick={() => setShowCurrencyPicker(true)} className="text-3xl sm:text-4xl font-medium text-text-tertiary mr-1 pb-1 hover:text-text-primary transition-colors cursor-pointer active:scale-95">
+              {CURRENCY_SYMBOLS[currency] || currency}
+            </button>
             <input
               type="text"
               inputMode="decimal"
@@ -360,6 +364,15 @@ export default function AddTransaction() {
               autoFocus
             />
           </div>
+          {currency !== 'INR' && amount && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-2 text-[15px] text-text-tertiary font-medium bg-surface/50 px-3 py-1 rounded-full border border-border/50"
+            >
+              = ₹{(Number(amount) * RATES[currency]).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+            </motion.div>
+          )}
         </div>
       </motion.div>
 
@@ -707,20 +720,22 @@ export default function AddTransaction() {
               ))}
             </select>
           </div>
-          <div>
-            <label className="text-[11px] font-bold text-text-secondary ml-1 uppercase tracking-wider block mb-1.5">Initial Balance</label>
-            <div className="input-premium-wrapper">
-              <span className="text-lg font-bold text-text-secondary mr-2">₹</span>
-              <input
-                type="number"
-                inputMode="decimal"
-                value={newAccBalance}
-                onChange={e => setNewAccBalance(e.target.value)}
-                placeholder="0"
-                className="font-semibold text-lg"
-              />
+          {newAccGroup !== 'Credit Card' && (
+            <div>
+              <label className="text-[11px] font-bold text-text-secondary ml-1 uppercase tracking-wider block mb-1.5">Initial Balance</label>
+              <div className="input-premium-wrapper">
+                <span className="text-lg font-bold text-text-secondary mr-2">₹</span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  value={newAccBalance}
+                  onChange={e => setNewAccBalance(e.target.value)}
+                  placeholder="0"
+                  className="font-semibold text-lg"
+                />
+              </div>
             </div>
-          </div>
+          )}
           <button
             onClick={handleQuickAddAccount}
             disabled={!newAccName.trim()}
@@ -728,6 +743,27 @@ export default function AddTransaction() {
           >
             Create Account
           </button>
+        </div>
+      </Drawer>
+      {/* Currency Picker Drawer */}
+      <Drawer open={showCurrencyPicker} onClose={() => setShowCurrencyPicker(false)} title="Select Currency">
+        <div className="p-4 space-y-2">
+          {Object.entries(RATES).map(([code, rate]) => (
+            <button
+              key={code}
+              onClick={() => { setCurrency(code); setShowCurrencyPicker(false); }}
+              className={`flex items-center justify-between w-full px-4 py-3 rounded-2xl transition-all active:scale-[0.98]
+                ${currency === code ? 'bg-coral/20 ring-1 ring-coral' : 'bg-elevated'}`}
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-xl w-6 text-center text-text-primary">{CURRENCY_SYMBOLS[code] || code}</span>
+                <span className="text-sm font-bold">{code}</span>
+              </div>
+              {code !== 'INR' && (
+                <span className="text-xs font-semibold text-text-secondary bg-surface px-2 py-1 rounded-lg">1 {code} = ₹{rate}</span>
+              )}
+            </button>
+          ))}
         </div>
       </Drawer>
     </div>

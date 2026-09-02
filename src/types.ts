@@ -5,6 +5,7 @@ export type TransactionType = 'income' | 'expense' | 'transfer';
 export type AccountGroup =
   | 'Cash'
   | 'Bank Accounts'
+  | 'Credit Card'
   | 'Card'
   | 'Debit Card'
   | 'Savings'

@@ -26,7 +26,7 @@ const itemVariants: Variants = {
 };
 
 const ACCOUNT_GROUPS_ORDER: AccountGroup[] = [
-  'Cash', 'Bank Accounts', 'Card', 'Debit Card', 'Savings',
+  'Cash', 'Bank Accounts', 'Credit Card', 'Card', 'Debit Card', 'Savings',
   'Top-Up/Prepaid', 'Investments', 'Overdrafts', 'Loan', 'Insurance', 'Others'
 ];
 
@@ -38,7 +38,7 @@ export default function Accounts() {
   const [newGroup, setNewGroup] = useState<AccountGroup>('Bank Accounts');
   const [newBalance, setNewBalance] = useState('');
 
-  const isAccountValid = newName.trim().length > 0 && !isNaN(parseFloat(newBalance));
+  const isAccountValid = newName.trim().length > 0 && (newGroup === 'Credit Card' || !isNaN(parseFloat(newBalance)));
 
   // Group accounts
   const grouped = accountsWithBalances.reduce<Record<string, typeof accountsWithBalances>>((acc, item) => {
@@ -60,7 +60,7 @@ export default function Accounts() {
       id: uuidv4(),
       name: newName.trim(),
       group: newGroup,
-      balance: Number(newBalance) || 0,
+      balance: newGroup === 'Credit Card' ? 0 : (Number(newBalance) || 0),
       settlementDate: 1,
       paymentDate: 1,
     });
@@ -178,20 +178,22 @@ export default function Accounts() {
             </select>
           </div>
 
-          <div>
-            <label className="text-[11px] font-bold text-text-secondary ml-1 uppercase tracking-wider block mb-1.5">Initial Balance</label>
-            <div className="input-premium-wrapper">
-              <span className="text-lg font-bold text-text-secondary mr-2">₹</span>
-              <input
-                type="number"
-                inputMode="decimal"
-                value={newBalance}
-                onChange={e => setNewBalance(e.target.value)}
-                placeholder="0"
-                className="font-semibold text-lg"
-              />
+          {newGroup !== 'Credit Card' && (
+            <div>
+              <label className="text-[11px] font-bold text-text-secondary ml-1 uppercase tracking-wider block mb-1.5">Initial Balance</label>
+              <div className="input-premium-wrapper">
+                <span className="text-lg font-bold text-text-secondary mr-2">₹</span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  value={newBalance}
+                  onChange={e => setNewBalance(e.target.value)}
+                  placeholder="0"
+                  className="font-semibold text-lg"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           <button
             onClick={handleAddAccount}
