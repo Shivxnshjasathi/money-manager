@@ -1,15 +1,15 @@
 import { useState, useMemo, useRef } from 'react';
 import { format, addMonths, subMonths, isSameDay } from 'date-fns';
-import { Search, X } from 'lucide-react';
+import { Search, X, Trash2 } from 'lucide-react';
 import TopBar from '../components/TopBar';
 import Tabs from '../components/Tabs';
 import TransactionItem from '../components/TransactionItem';
 import CalendarView from '../components/CalendarView';
 import Drawer from '../components/Drawer';
-import { useTransactions, useAccounts, useCategories, useAllTransactions, formatINR, getCategoryById, getAccountById, useUIStore } from '../hooks';
+import { useTransactions, useAccountBalances, useCategories, useAllTransactions, formatINR, getCategoryById, getAccountById, useUIStore } from '../hooks';
 import { deleteTransaction } from '../db';
 import type { ITransaction } from '../types';
-import { motion, type Variants } from 'framer-motion';
+import { motion, type Variants, AnimatePresence } from 'framer-motion';
 
 const VIEW_TABS = ['Daily', 'Calendar', 'Monthly', 'Summary', 'Description'];
 
@@ -33,7 +33,8 @@ export default function TransactionsList() {
   const [filterType, setFilterType] = useState<string>('all');
   const [filterAccount, setFilterAccount] = useState<string>('all');
   const [filterCategory, setFilterCategory] = useState<string>('all');
-  const [txToDelete, setTxToDelete] = useState<string | null>(null);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedTxs, setSelectedTxs] = useState<Set<string>>(new Set());
   const { isScrollingDown, setIsScrollingDown } = useUIStore();
   const lastScrollY = useRef(0);
   const scrollLock = useRef(false);
@@ -41,7 +42,7 @@ export default function TransactionsList() {
   const rawTransactions = useTransactions(monthDate);
   const allTransactions = useAllTransactions();
   const categories = useCategories();
-  const accounts = useAccounts();
+  const accounts = useAccountBalances();
 
   // Apply filters
   const transactions = useMemo(() => {
@@ -72,7 +73,11 @@ export default function TransactionsList() {
         format(new Date(tx.date), 'dd MMM yyyy'),
       ].join(' ').toLowerCase();
       return searchable.includes(q);
-    }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }).sort((a, b) => {
+      const timeDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
+      if (timeDiff !== 0) return timeDiff;
+      return (b.createdAt || 0) - (a.createdAt || 0);
+    });
   }, [allTransactions, searchQuery, categories, accounts]);
 
   // Compute running balances for all transactions sorted ascending
@@ -85,7 +90,7 @@ export default function TransactionsList() {
     const sorted = [...allTransactions].sort((a, b) => {
       const timeDiff = new Date(a.date).getTime() - new Date(b.date).getTime();
       if (timeDiff !== 0) return timeDiff;
-      return allTransactions.indexOf(a) - allTransactions.indexOf(b); // Tie-breaker: insertion order ascending
+      return (a.createdAt || 0) - (b.createdAt || 0); // Tie-breaker: insertion order ascending
     });
 
     sorted.forEach(tx => {
@@ -105,14 +110,40 @@ export default function TransactionsList() {
   }, [allTransactions, accounts]);
 
   // Aggregate for topbar
-  const { totalIncome, totalExpense } = useMemo(() => {
-    let inc = 0, exp = 0;
+  const { totalIncome, totalExpense, myExpense } = useMemo(() => {
+    let inc = 0, tExp = 0, mExp = 0;
+    const moneyOwedAcc = accounts.find(a => a.name === 'Money Owed');
+    
     transactions.forEach(tx => {
       if (tx.type === 'income') inc += tx.amount;
-      if (tx.type === 'expense') exp += tx.amount;
+      if (tx.type === 'expense') {
+        tExp += tx.amount;
+        mExp += tx.amount;
+      }
+      if (tx.type === 'transfer' && moneyOwedAcc && tx.toAccountId === moneyOwedAcc.id) {
+        tExp += tx.amount;
+      }
     });
-    return { totalIncome: inc, totalExpense: exp };
-  }, [transactions]);
+    return { totalIncome: inc, totalExpense: tExp, myExpense: mExp };
+  }, [transactions, accounts]);
+
+  const topBarStats = useMemo(() => {
+    const splitThisMonth = totalExpense - myExpense;
+    
+    if (splitThisMonth > 0) {
+      return [
+        { label: 'TOTAL EXPENSE', value: totalExpense, color: 'text-text-primary' },
+        { label: 'MY EXPENSE', value: myExpense, color: 'text-expense' },
+        { label: 'MONEY OWED', value: splitThisMonth, color: 'text-income' }
+      ];
+    }
+    
+    return [
+      { label: 'INCOME', value: totalIncome, color: 'text-income' },
+      { label: 'EXPENSE', value: myExpense, color: 'text-expense' },
+      { label: 'TOTAL', value: totalIncome - myExpense, color: totalIncome - myExpense >= 0 ? 'text-income' : 'text-expense' }
+    ];
+  }, [totalIncome, totalExpense, myExpense]);
 
   // Group by date descending
   const grouped = useMemo(() => {
@@ -131,7 +162,7 @@ export default function TransactionsList() {
       sortedGroups[k] = map[k].sort((a, b) => {
         const timeDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
         if (timeDiff !== 0) return timeDiff;
-        return allTransactions.indexOf(b) - allTransactions.indexOf(a); // Tie-breaker: insertion order descending
+        return (b.createdAt || 0) - (a.createdAt || 0); // Tie-breaker: insertion order descending
       });
     });
     return sortedGroups;
@@ -145,7 +176,11 @@ export default function TransactionsList() {
 
   const filteredGrouped = useMemo(() => {
     const map: Record<string, ITransaction[]> = {};
-    const sorted = [...filteredByCalDay].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const sorted = [...filteredByCalDay].sort((a, b) => {
+      const timeDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
+      if (timeDiff !== 0) return timeDiff;
+      return (b.createdAt || 0) - (a.createdAt || 0);
+    });
     sorted.forEach(tx => {
       const key = tx.date.split('T')[0];
       (map[key] ??= []).push(tx);
@@ -215,7 +250,24 @@ export default function TransactionsList() {
                       categories={categories}
                       accounts={accounts}
                       runningBalance={runningBalances[tx.id]}
-                      onLongPress={() => setTxToDelete(tx.id)}
+                      onLongPress={() => {
+                        if (!selectionMode) {
+                          setSelectionMode(true);
+                          setSelectedTxs(new Set([tx.id]));
+                        }
+                      }}
+                      onClick={() => {
+                        if (selectionMode) {
+                          const next = new Set(selectedTxs);
+                          if (next.has(tx.id)) next.delete(tx.id);
+                          else next.add(tx.id);
+                          if (next.size === 0) setSelectionMode(false);
+                          setSelectedTxs(next);
+                        }
+                      }}
+                      selectionMode={selectionMode}
+                      isSelected={selectedTxs.has(tx.id)}
+                      onDelete={() => handleDeleteTx(tx.id)}
                     />
                   </div>
                 ))}
@@ -233,8 +285,7 @@ export default function TransactionsList() {
         title={format(monthDate, 'MMM yyyy')}
         onPrev={handlePrev}
         onNext={handleNext}
-        income={totalIncome}
-        expense={totalExpense}
+        stats={topBarStats}
         showSearch
         onSearch={() => setSearchOpen(true)}
         showFilter
@@ -311,7 +362,24 @@ export default function TransactionsList() {
                           categories={categories}
                           accounts={accounts}
                           runningBalance={runningBalances[tx.id]}
-                          onLongPress={() => setTxToDelete(tx.id)}
+                          onLongPress={() => {
+                            if (!selectionMode) {
+                              setSelectionMode(true);
+                              setSelectedTxs(new Set([tx.id]));
+                            }
+                          }}
+                          onClick={() => {
+                            if (selectionMode) {
+                              const next = new Set(selectedTxs);
+                              if (next.has(tx.id)) next.delete(tx.id);
+                              else next.add(tx.id);
+                              if (next.size === 0) setSelectionMode(false);
+                              setSelectedTxs(next);
+                            }
+                          }}
+                          selectionMode={selectionMode}
+                          isSelected={selectedTxs.has(tx.id)}
+                          onDelete={() => handleDeleteTx(tx.id)}
                         />
                       </div>
                     ))}
@@ -354,7 +422,24 @@ export default function TransactionsList() {
                             categories={categories}
                             accounts={accounts}
                             runningBalance={runningBalances[tx.id]}
-                            onLongPress={() => setTxToDelete(tx.id)}
+                            onLongPress={() => {
+                              if (!selectionMode) {
+                                setSelectionMode(true);
+                                setSelectedTxs(new Set([tx.id]));
+                              }
+                            }}
+                            onClick={() => {
+                              if (selectionMode) {
+                                const next = new Set(selectedTxs);
+                                if (next.has(tx.id)) next.delete(tx.id);
+                                else next.add(tx.id);
+                                if (next.size === 0) setSelectionMode(false);
+                                setSelectedTxs(next);
+                              }
+                            }}
+                            selectionMode={selectionMode}
+                            isSelected={selectedTxs.has(tx.id)}
+                            onDelete={() => handleDeleteTx(tx.id)}
                           />
                         </div>
                       ))}
@@ -544,26 +629,44 @@ export default function TransactionsList() {
         </div>
       </Drawer>
 
-      {/* ─── Delete Confirmation Drawer ─── */}
-      <Drawer open={!!txToDelete} onClose={() => setTxToDelete(null)} title="Transaction Options">
-        <div className="p-4 space-y-4">
-          <button
-            onClick={() => {
-              if (txToDelete) handleDeleteTx(txToDelete);
-              setTxToDelete(null);
-            }}
-            className="w-full bg-expense/10 text-expense py-4 rounded-2xl font-bold active:scale-95 transition-transform"
+      {/* Selection Mode Bottom Bar */}
+      <AnimatePresence>
+        {selectionMode && (
+          <motion.div 
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            className="fixed bottom-0 left-0 right-0 p-4 bg-surface/90 backdrop-blur-md border-t border-border z-50 flex items-center justify-between pb-[calc(1rem+env(safe-area-inset-bottom))]"
           >
-            Delete Transaction
-          </button>
-          <button
-            onClick={() => setTxToDelete(null)}
-            className="w-full bg-surface text-text-primary py-4 rounded-2xl font-bold active:scale-95 transition-transform"
-          >
-            Cancel
-          </button>
-        </div>
-      </Drawer>
+            <span className="font-semibold text-text-primary text-sm">{selectedTxs.size} Selected</span>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => {
+                  setSelectionMode(false);
+                  setSelectedTxs(new Set());
+                }}
+                className="px-4 py-2 font-semibold text-text-secondary bg-elevated rounded-xl text-sm"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={async () => {
+                  if (confirm(`Delete ${selectedTxs.size} transaction(s)?`)) {
+                    for (const id of Array.from(selectedTxs)) {
+                      await deleteTransaction(id);
+                    }
+                    setSelectionMode(false);
+                    setSelectedTxs(new Set());
+                  }
+                }}
+                className="px-4 py-2 font-semibold text-bg bg-coral rounded-xl flex items-center gap-2 text-sm"
+              >
+                <Trash2 size={16} /> Delete
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

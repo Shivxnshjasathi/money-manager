@@ -150,8 +150,11 @@ export default function Stats() {
         title={format(monthDate, 'MMMM yyyy')}
         onPrev={() => setMonthDate(d => subMonths(d, 1))}
         onNext={() => setMonthDate(d => addMonths(d, 1))}
-        income={totalIncome}
-        expense={totalExpense}
+        stats={[
+          { label: 'INCOME', value: totalIncome, color: 'text-income' },
+          { label: 'EXPENSE', value: totalExpense, color: 'text-expense' },
+          { label: 'TOTAL', value: totalIncome - totalExpense, color: totalIncome - totalExpense >= 0 ? 'text-income' : 'text-expense' }
+        ]}
         showSearch
       />
 

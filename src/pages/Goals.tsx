@@ -150,6 +150,7 @@ export default function Goals() {
                           accountId: 'cash',
                           note: `Contribution to ${goal.name}`,
                           description: '',
+                          createdAt: Date.now(),
                         });
                       }
                     }}

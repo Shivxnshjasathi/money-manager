@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Camera, X, Calendar, Tag, Wallet, FileText, AlignLeft, Repeat, ChevronRight, SplitSquareHorizontal, Wand2, Mic } from 'lucide-react';
+import { ChevronLeft, Camera, X, Calendar, Tag, Wallet, FileText, AlignLeft, Repeat, ChevronRight, SplitSquareHorizontal, Wand2, Mic, Layers } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -21,7 +21,7 @@ export default function AddTransaction() {
   const [quickAddText, setQuickAddText] = useState('');
   const [isSmartAddExpanded, setIsSmartAddExpanded] = useState(false);
   const { isListening, setIsListening } = useSpeechRecognition(setQuickAddText);
-  
+
   const [currency, setCurrency] = useState('INR');
   const RATES: Record<string, number> = { INR: 1, USD: 83.5, EUR: 90.2, GBP: 105.4, AED: 22.7, JPY: 0.55 };
   const CURRENCY_SYMBOLS: Record<string, string> = { INR: '₹', USD: '$', EUR: '€', GBP: '£', AED: 'د.إ', JPY: '¥' };
@@ -40,12 +40,14 @@ export default function AddTransaction() {
   const [attachment, setAttachment] = useState<string | undefined>(undefined);
   const [isRecurring, setIsRecurring] = useState(false);
   const [showMoreDetails, setShowMoreDetails] = useState(false);
-  const [frequency, setFrequency] = useState<'daily'|'weekly'|'monthly'|'yearly'>('monthly');
+  const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
   const [showCatPicker, setShowCatPicker] = useState(false);
   const [showAccPicker, setShowAccPicker] = useState(false);
   const [showToAccPicker, setShowToAccPicker] = useState(false);
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
-  
+  const [superCategory, setSuperCategory] = useState<'needs' | 'wants' | 'investment' | ''>('');
+  const [showSuperCatPicker, setShowSuperCatPicker] = useState(false);
+
   const [showQuickAddAcc, setShowQuickAddAcc] = useState(false);
   const [newAccName, setNewAccName] = useState('');
   const [newAccBalance, setNewAccBalance] = useState('');
@@ -141,7 +143,7 @@ export default function AddTransaction() {
 
     const rate = RATES[currency] || 1;
     const finalAmount = rawAmount * rate;
-    
+
     let myShare = finalAmount;
     let friendShareNum = 0;
 
@@ -153,7 +155,7 @@ export default function AddTransaction() {
       }
     }
 
-    const finalDescription = currency !== 'INR' 
+    const finalDescription = currency !== 'INR'
       ? `${description ? description + ' ' : ''}(${currency} ${amount})`.trim()
       : description;
 
@@ -161,7 +163,7 @@ export default function AddTransaction() {
 
     if (isRecurring) {
       recurringId = uuidv4();
-      
+
       const nextRun = new Date(date);
       if (frequency === 'daily') nextRun.setDate(nextRun.getDate() + 1);
       else if (frequency === 'weekly') nextRun.setDate(nextRun.getDate() + 7);
@@ -177,6 +179,7 @@ export default function AddTransaction() {
         toAccountId: type === 'transfer' ? toAccount : undefined,
         note,
         description: finalDescription,
+        superCategory: superCategory !== '' ? superCategory : undefined,
         frequency,
         startDate: new Date(date).toISOString(),
         nextRunDate: nextRun.toISOString()
@@ -197,9 +200,10 @@ export default function AddTransaction() {
         description: finalDescription,
         attachment,
         recurringId,
+        createdAt: Date.now(),
       });
     } else {
-      if (!selectedCategory || !selectedAccount) return;
+      if (!selectedCategory) return;
       await db.transactions.add({
         id: uuidv4(),
         type,
@@ -210,16 +214,18 @@ export default function AddTransaction() {
         note,
         description: finalDescription,
         attachment,
+        superCategory: superCategory !== '' ? superCategory : undefined,
         recurringId,
+        createdAt: Date.now(),
       });
 
       // Splitting logic: record the debt
       if (isSplit && friendShareNum > 0 && type === 'expense') {
         let recAcc = (accounts as any[]).find(a => a.name === 'Money Owed');
         if (!recAcc) {
-          const newAcc: IAccount = { 
-            id: uuidv4(), 
-            name: 'Money Owed', 
+          const newAcc: IAccount = {
+            id: uuidv4(),
+            name: 'Money Owed',
             group: 'Others',
             balance: 0,
             settlementDate: 1,
@@ -238,6 +244,7 @@ export default function AddTransaction() {
           toAccountId: recAcc.id,
           note: `Split: ${note}`,
           description: `Friend's share for ${finalDescription}`,
+          createdAt: Date.now(),
         });
       }
     }
@@ -258,7 +265,7 @@ export default function AddTransaction() {
         <div className="flex items-center justify-between px-4 h-14 relative">
           <AnimatePresence mode="wait">
             {!isSmartAddExpanded ? (
-              <motion.div 
+              <motion.div
                 key="title"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -274,7 +281,7 @@ export default function AddTransaction() {
                 </button>
               </motion.div>
             ) : (
-              <motion.div 
+              <motion.div
                 key="input"
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -338,7 +345,7 @@ export default function AddTransaction() {
       </div>
 
       {/* Amount Hero Section */}
-      <motion.div 
+      <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", damping: 20, stiffness: 300 }}
@@ -365,7 +372,7 @@ export default function AddTransaction() {
             />
           </div>
           {currency !== 'INR' && amount && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               className="mt-2 text-[15px] text-text-tertiary font-medium bg-surface/50 px-3 py-1 rounded-full border border-border/50"
@@ -377,14 +384,14 @@ export default function AddTransaction() {
       </motion.div>
 
       {/* FORM CARD (Sleek List) */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1, type: "spring", damping: 25, stiffness: 200 }}
         className="flex-1 min-h-0 px-4 pb-28 overflow-y-auto"
       >
         <div className="bg-surface/50 backdrop-blur-xl border border-border/30 rounded-3xl overflow-hidden flex flex-col">
-          
+
           {/* Date Row */}
           <div className="flex items-center py-3.5 px-4 border-b border-border/30 group relative">
             <div className="w-9 h-9 rounded-xl bg-elevated flex items-center justify-center text-text-primary mr-4 shrink-0 shadow-sm border border-border/50">
@@ -403,7 +410,7 @@ export default function AddTransaction() {
               className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
             />
           </div>
-          
+
           {/* Category Row */}
           {type !== 'transfer' && (
             <button onClick={() => setShowCatPicker(true)} className="w-full flex items-center py-3.5 px-4 border-b border-border/30 text-left active:bg-elevated transition-colors">
@@ -418,6 +425,26 @@ export default function AddTransaction() {
                   </span>
                 ) : (
                   <span className="text-[15px] font-medium text-text-tertiary">Select</span>
+                )}
+              </div>
+              <ChevronRight size={18} className="text-text-tertiary shrink-0" />
+            </button>
+          )}
+
+          {/* Super Category Row */}
+          {type !== 'transfer' && (
+            <button onClick={() => setShowSuperCatPicker(true)} className="w-full flex items-center py-3.5 px-4 border-b border-border/30 text-left active:bg-elevated transition-colors">
+              <div className="w-9 h-9 rounded-xl bg-elevated flex items-center justify-center text-text-primary mr-4 shrink-0 shadow-sm border border-border/50">
+                <Layers size={18} />
+              </div>
+              <div className="flex-1 flex items-center justify-between min-w-0 pr-2">
+                <span className="text-[15px] font-medium text-text-primary">Super Category</span>
+                {superCategory ? (
+                  <span className="text-[15px] font-medium text-text-secondary flex items-center gap-1.5 capitalize">
+                    {superCategory}
+                  </span>
+                ) : (
+                  <span className="text-[15px] font-medium text-text-tertiary">Select (Optional)</span>
                 )}
               </div>
               <ChevronRight size={18} className="text-text-tertiary shrink-0" />
@@ -560,27 +587,27 @@ export default function AddTransaction() {
             )}
           </AnimatePresence>
 
-          <button 
+          <button
             onClick={() => setShowMoreDetails(!showMoreDetails)}
             className="py-3.5 w-full text-center text-sm font-semibold text-text-tertiary hover:text-text-primary transition-colors border-t border-border/30 bg-elevated/30 flex items-center justify-center gap-1"
           >
             {showMoreDetails ? "Hide Options" : "More Options..."}
           </button>
         </div>
-        
+
         {/* Attachment Preview */}
         {attachment && (
           <div className="relative mt-4 rounded-3xl overflow-hidden border border-border/30 shadow-sm">
             <img src={attachment} alt="Receipt preview" className="w-full h-40 object-cover" />
-            <button 
-              onClick={() => setAttachment(undefined)} 
+            <button
+              onClick={() => setAttachment(undefined)}
               className="absolute top-3 right-3 bg-bg/50 backdrop-blur-md rounded-full p-2 border border-white/10 text-white hover:bg-bg/70 transition-colors"
             >
-              <X size={16} /> 
+              <X size={16} />
             </button>
           </div>
         )}
-        
+
         {/* Spacer to prevent overlap with floating button */}
         <div className="h-32 shrink-0 w-full" />
       </motion.div>
@@ -594,20 +621,41 @@ export default function AddTransaction() {
             transition={{ type: "spring", damping: 20, stiffness: 200, delay: 0.3 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => {
-              const isValid = amount.length > 0 && parseFloat(amount) > 0 && selectedAccount && (type === 'transfer' ? toAccount : selectedCategory);
+              const isValid = amount.length > 0 && parseFloat(amount) > 0 && (type === 'transfer' ? (selectedAccount && toAccount) : selectedCategory);
               if (isValid) handleSave(false);
             }}
-            disabled={!(amount.length > 0 && parseFloat(amount) > 0 && selectedAccount && (type === 'transfer' ? toAccount : selectedCategory))}
-            className={`w-full py-4 rounded-2xl font-semibold transition-colors shadow-lg backdrop-blur-xl ${
-              (amount.length > 0 && parseFloat(amount) > 0 && selectedAccount && (type === 'transfer' ? toAccount : selectedCategory))
+            disabled={!(amount.length > 0 && parseFloat(amount) > 0 && (type === 'transfer' ? (selectedAccount && toAccount) : selectedCategory))}
+            className={`w-full py-4 rounded-2xl font-semibold transition-colors shadow-lg backdrop-blur-xl ${(amount.length > 0 && parseFloat(amount) > 0 && (type === 'transfer' ? (selectedAccount && toAccount) : selectedCategory))
                 ? 'bg-coral text-bg shadow-coral/20'
                 : 'bg-surface/80 border border-border/50 text-text-tertiary opacity-50'
-            }`}
+              }`}
           >
             Save Transaction
           </motion.button>
         </div>
       </div>
+
+      {/* Super Category Picker Drawer */}
+      <Drawer open={showSuperCatPicker} onClose={() => setShowSuperCatPicker(false)} title="Select Super Category">
+        <div className="p-4 space-y-2">
+          {['needs', 'wants', 'investment'].map((scat) => (
+            <button
+              key={scat}
+              onClick={() => { setSuperCategory(scat as any); setShowSuperCatPicker(false); }}
+              className={`flex flex-col items-start w-full px-4 py-3 rounded-2xl transition-all active:scale-[0.98]
+                ${superCategory === scat ? 'bg-coral/20 ring-1 ring-coral' : 'bg-elevated'}`}
+            >
+              <span className="text-sm font-medium capitalize">{scat}</span>
+            </button>
+          ))}
+          <button
+            onClick={() => { setSuperCategory(''); setShowSuperCatPicker(false); }}
+            className={`flex flex-col items-start w-full px-4 py-3 rounded-2xl transition-all active:scale-[0.98] mt-4 border border-border/50 bg-bg`}
+          >
+            <span className="text-sm font-medium text-text-secondary">Clear / None</span>
+          </button>
+        </div>
+      </Drawer>
 
       {/* Category Picker Drawer */}
       <Drawer open={showCatPicker} onClose={() => setShowCatPicker(false)} title="Select Category">
@@ -652,6 +700,14 @@ export default function AddTransaction() {
                 </div>
               </button>
             ))
+          )}
+          {type !== 'transfer' && (
+            <button
+              onClick={() => { setSelectedAccount(''); setShowAccPicker(false); }}
+              className={`flex flex-col items-start w-full px-4 py-3 rounded-2xl transition-all active:scale-[0.98] mt-4 border border-border/50 bg-bg`}
+            >
+              <span className="text-sm font-medium text-text-secondary">Clear / None</span>
+            </button>
           )}
           <button
             onClick={() => {

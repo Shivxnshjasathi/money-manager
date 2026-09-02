@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from 'react';
 import type { ITransaction, ICategory, IAccount } from '../types';
 import { formatINR, getCategoryById, getAccountById } from '../hooks';
-import { Paperclip, Trash2 } from 'lucide-react';
+import { Paperclip, Trash2, CheckCircle2 } from 'lucide-react';
 import { playFeedback } from '../utils/feedback';
 
 import { motion, useAnimation, type Variants, type PanInfo } from 'framer-motion';
@@ -13,6 +13,10 @@ interface Props {
   runningBalance?: number;
   onClick?: () => void;
   onLongPress?: () => void;
+  onDelete?: () => void;
+  onSettle?: () => void;
+  selectionMode?: boolean;
+  isSelected?: boolean;
 }
 
 const itemVariants: Variants = {
@@ -24,7 +28,7 @@ const itemVariants: Variants = {
   }
 };
 
-export default function TransactionItem({ transaction: tx, categories, accounts, runningBalance, onClick, onLongPress }: Props) {
+export default function TransactionItem({ transaction: tx, categories, accounts, runningBalance, onClick, onLongPress, onDelete, onSettle, selectionMode, isSelected }: Props) {
   const isTransfer = tx.type === 'transfer';
   const cat = !isTransfer ? getCategoryById(categories, tx.category) : undefined;
   const acc = getAccountById(accounts, tx.accountId);
@@ -59,6 +63,7 @@ export default function TransactionItem({ transaction: tx, categories, accounts,
   }, [controls]);
 
   const handleDragEnd = (_event: any, info: PanInfo) => {
+    if (selectionMode) return;
     const threshold = -60;
     if (info.offset.x < threshold) {
       playFeedback.action();
@@ -73,7 +78,7 @@ export default function TransactionItem({ transaction: tx, categories, accounts,
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     playFeedback.delete();
-    onLongPress?.(); // Trigger parent delete drawer/action
+    onDelete?.(); // Trigger parent delete action
   };
 
   return (
@@ -115,6 +120,15 @@ export default function TransactionItem({ transaction: tx, categories, accounts,
           onMouseLeave={handleTouchEnd}
           className="flex items-center justify-between w-full p-4 rounded-2xl border border-border/50 shadow-sm transition-all bg-surface hover:bg-elevated"
         >
+          {selectionMode && (
+            <div className="shrink-0 mr-3">
+              {isSelected ? (
+                <CheckCircle2 size={24} className="text-primary fill-primary/20" />
+              ) : (
+                <div className="w-6 h-6 rounded-full border-2 border-border/50" />
+              )}
+            </div>
+          )}
           <div className="flex items-center gap-3 flex-1 min-w-0">
             {/* Icon */}
             <div className="w-9 h-9 rounded-2xl bg-elevated flex items-center justify-center text-lg shrink-0 shadow-sm border border-border/50">
@@ -145,6 +159,17 @@ export default function TransactionItem({ transaction: tx, categories, accounts,
               <span className="text-[10px] text-text-tertiary mt-0.5 font-medium">
                 {formatINR(runningBalance)}
               </span>
+            )}
+            {onSettle && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSettle();
+                }}
+                className="mt-1.5 bg-income/10 text-income text-[10px] px-2.5 py-1 rounded-md font-bold border border-income/20 active:scale-95 transition-transform"
+              >
+                Settle
+              </button>
             )}
           </div>
         </motion.button>

@@ -101,6 +101,7 @@ export async function processRecurringTransactions() {
         note: rt.note,
         description: rt.description,
         recurringId: rt.id,
+        createdAt: Date.now(),
       });
 
       // Increment nextRun based on frequency

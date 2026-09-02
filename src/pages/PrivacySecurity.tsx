@@ -1,11 +1,27 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShieldCheck, Fingerprint, Database, CloudOff } from 'lucide-react';
+import { ShieldCheck, Fingerprint, Database, CloudOff, Loader2 } from 'lucide-react';
 import TopBar from '../components/TopBar';
+import { enableBiometricLock, disableBiometricLock, isBiometricLockEnabled } from '../utils/auth';
 
 export default function PrivacySecurity() {
   const navigate = useNavigate();
-  const [appLock, setAppLock] = useState(false);
+  const [appLock, setAppLock] = useState(isBiometricLockEnabled());
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const handleToggleLock = async () => {
+    if (appLock) {
+      disableBiometricLock();
+      setAppLock(false);
+    } else {
+      setIsProcessing(true);
+      const success = await enableBiometricLock();
+      setIsProcessing(false);
+      if (success) {
+        setAppLock(true);
+      }
+    }
+  };
 
   return (
     <div className="flex flex-col h-full w-full bg-bg">
@@ -65,15 +81,20 @@ export default function PrivacySecurity() {
             </div>
             
             <button 
-              onClick={() => setAppLock(!appLock)}
-              className={`relative inline-flex h-7 w-12 items-center rounded-2xl transition-colors duration-300 focus:outline-none ${appLock ? 'bg-coral' : 'bg-elevated'}`}
+              onClick={handleToggleLock}
+              disabled={isProcessing}
+              className={`relative inline-flex h-7 w-12 items-center rounded-2xl transition-colors duration-300 focus:outline-none ${appLock ? 'bg-coral' : 'bg-elevated'} ${isProcessing ? 'opacity-50' : ''}`}
             >
-              <span className={`inline-block h-5 w-5 transform rounded-2xl bg-white transition-transform duration-300 ${appLock ? 'translate-x-6' : 'translate-x-1'}`} />
+              {isProcessing ? (
+                <Loader2 size={16} className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 animate-spin text-white" />
+              ) : (
+                <span className={`inline-block h-5 w-5 transform rounded-2xl bg-white transition-transform duration-300 ${appLock ? 'translate-x-6' : 'translate-x-1'}`} />
+              )}
             </button>
           </div>
           {appLock && (
             <div className="px-5 pb-5 pt-2 text-[12px] text-text-tertiary border-t border-border/30 mx-5 mt-2">
-              Note: Full biometric lock support requires specific OS integrations. This feature serves as an interface placeholder for the web context.
+              Biometric lock is active. You will be prompted for FaceID/TouchID when opening the app.
             </div>
           )}
         </div>

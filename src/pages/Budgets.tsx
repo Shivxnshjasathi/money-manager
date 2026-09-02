@@ -134,8 +134,11 @@ export default function Budgets() {
         title={format(monthDate, 'MMM yyyy')}
         onPrev={handlePrev}
         onNext={handleNext}
-        income={totalIncome}
-        expense={totalSpent}
+        stats={[
+          { label: 'INCOME', value: totalIncome, color: 'text-income' },
+          { label: 'EXPENSE', value: totalSpent, color: 'text-expense' },
+          { label: 'TOTAL', value: totalIncome - totalSpent, color: totalIncome - totalSpent >= 0 ? 'text-income' : 'text-expense' }
+        ]}
       />
 
       <div className="flex-1 overflow-y-auto px-4 space-y-4 fade-in">

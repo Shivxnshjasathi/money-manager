@@ -6,8 +6,7 @@ interface TopBarProps {
   title: string;
   onPrev?: () => void;
   onNext?: () => void;
-  income?: number;
-  expense?: number;
+  stats?: { label: string; value: number; color: string }[];
   showSearch?: boolean;
   onSearch?: () => void;
   showFilter?: boolean;
@@ -16,9 +15,8 @@ interface TopBarProps {
 }
 
 export default function TopBar({
-  title, onPrev, onNext, income, expense, showSearch, onSearch, showFilter, onFilter, isScrolled
+  title, onPrev, onNext, stats, showSearch, onSearch, showFilter, onFilter, isScrolled
 }: TopBarProps) {
-  const total = (income || 0) - (expense || 0);
 
   return (
     <div className="bg-bg/85 backdrop-blur-xl pt-[env(safe-area-inset-top)] shrink-0 z-10 sticky top-0">
@@ -72,7 +70,7 @@ export default function TopBar({
 
       {/* Stats row */}
       <AnimatePresence initial={false}>
-        {income !== undefined && expense !== undefined && !isScrolled && (
+        {stats && stats.length > 0 && !isScrolled && (
           <motion.div 
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
@@ -80,11 +78,7 @@ export default function TopBar({
             transition={{ duration: 0.25, ease: "easeInOut" }}
             className="flex justify-between px-4 pb-3 pt-1 gap-2 overflow-hidden"
           >
-            {[
-              { label: 'Income', value: income, color: 'text-income' },
-              { label: 'Expense', value: expense, color: 'text-expense' },
-              { label: 'Total', value: total, color: total >= 0 ? 'text-income' : 'text-expense' },
-            ].map((item) => (
+            {stats.map((item) => (
               <div
                 key={item.label}
                 className="flex-1 flex flex-col items-center justify-center bg-surface/50 backdrop-blur-md rounded-2xl py-3 border border-border/50 shadow-sm transition-shadow"

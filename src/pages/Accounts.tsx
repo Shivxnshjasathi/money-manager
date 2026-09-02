@@ -38,7 +38,8 @@ export default function Accounts() {
   const [newGroup, setNewGroup] = useState<AccountGroup>('Bank Accounts');
   const [newBalance, setNewBalance] = useState('');
 
-  const isAccountValid = newName.trim().length > 0 && (newGroup === 'Credit Card' || !isNaN(parseFloat(newBalance)));
+  const noInitialBalance = newGroup === 'Credit Card' || newGroup === 'Cash' || newGroup === 'Others';
+  const isAccountValid = newName.trim().length > 0 && (noInitialBalance || !isNaN(parseFloat(newBalance)));
 
   // Group accounts
   const grouped = accountsWithBalances.reduce<Record<string, typeof accountsWithBalances>>((acc, item) => {
@@ -178,7 +179,7 @@ export default function Accounts() {
             </select>
           </div>
 
-          {newGroup !== 'Credit Card' && (
+          {!noInitialBalance && (
             <div>
               <label className="text-[11px] font-bold text-text-secondary ml-1 uppercase tracking-wider block mb-1.5">Initial Balance</label>
               <div className="input-premium-wrapper">

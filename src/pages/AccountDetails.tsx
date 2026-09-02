@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, CreditCard } from 'lucide-react';
+import { ChevronLeft, CreditCard, CheckCircle } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useAccountBalances, useAllTransactions, useCategories, useAccounts, formatINR } from '../hooks';
 import TransactionItem from '../components/TransactionItem';
@@ -18,6 +18,13 @@ export default function AccountDetails() {
   const [payType, setPayType] = useState<'full' | 'custom'>('full');
   const [customPayAmount, setCustomPayAmount] = useState('');
   const [payFromAccount, setPayFromAccount] = useState<string>('');
+
+  // Settle Split Drawer States
+  const [showSettleSplit, setShowSettleSplit] = useState(false);
+  const [settleType, setSettleType] = useState<'full' | 'custom'>('full');
+  const [customSettleAmount, setCustomSettleAmount] = useState('');
+  const [settleToAccount, setSettleToAccount] = useState<string>('');
+  const [txToSettle, setTxToSettle] = useState<string | null>(null);
 
   const accountsWithBalances = useAccountBalances();
   const allTransactions = useAllTransactions();
@@ -103,11 +110,48 @@ export default function AccountDetails() {
       toAccountId: account.id,   // To (Credit Card)
       note: 'Credit Card Bill Payment',
       description: `Paid bill for ${account.name}`,
+      createdAt: Date.now(),
     });
 
     playFeedback.success();
     setShowPayBill(false);
     setCustomPayAmount('');
+  };
+
+  const handleSettleSplit = async () => {
+    if (!account || !settleToAccount) return;
+    const amount = settleType === 'full' ? (txToSettle ? allTransactions.find(t => t.id === txToSettle)?.amount || account.computedBalance : account.computedBalance) : Number(customSettleAmount);
+    if (!amount || amount <= 0) return;
+
+    await db.transactions.add({
+      id: uuidv4(),
+      type: 'transfer',
+      amount,
+      date: new Date().toISOString(),
+      category: '',
+      accountId: account.id,       // From Money Owed
+      toAccountId: settleToAccount, // To Bank Account
+      note: 'Split Settled',
+      description: `Received money for split`,
+      createdAt: Date.now(),
+    });
+
+    if (txToSettle) {
+      await db.transactions.update(txToSettle, { isSettled: true });
+    }
+
+    playFeedback.success();
+    setShowSettleSplit(false);
+    setCustomSettleAmount('');
+    setTxToSettle(null);
+  };
+
+  const initiateIndividualSettle = (tx: any) => {
+    setTxToSettle(tx.id);
+    setSettleType('full');
+    setCustomSettleAmount(tx.amount.toString());
+    setSettleToAccount(tx.accountId); // Default to the account it came from
+    setShowSettleSplit(true);
   };
 
   if (!account) {
@@ -147,7 +191,7 @@ export default function AccountDetails() {
             <div className="mb-4 flex items-start justify-between">
               <div>
                 <span className="text-sm text-text-secondary">
-                  {account.group === 'Credit Card' ? 'Outstanding Balance' : 'Current Balance'}
+                  {account.group === 'Credit Card' ? 'Outstanding Balance' : account.name === 'Money Owed' ? 'Total Money Gone' : 'Current Balance'}
                 </span>
                 <div className={`text-3xl font-bold mt-1 ${account.computedBalance < 0 ? 'text-expense' : 'text-income'}`}>
                   {formatINR(Math.abs(account.computedBalance))}
@@ -159,6 +203,14 @@ export default function AccountDetails() {
                   className="bg-coral text-bg px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-1.5 active:scale-95 transition-transform"
                 >
                   <CreditCard size={16} /> Pay Bill
+                </button>
+              )}
+              {account.name === 'Money Owed' && account.computedBalance > 0 && (
+                <button
+                  onClick={() => setShowSettleSplit(true)}
+                  className="bg-income text-bg px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-1.5 active:scale-95 transition-transform"
+                >
+                  <CheckCircle size={16} /> Mark Received
                 </button>
               )}
             </div>
@@ -195,6 +247,7 @@ export default function AccountDetails() {
                   accounts={accounts}
                   runningBalance={runningBalances[tx.id]}
                   onLongPress={() => setTxToDelete(tx.id)}
+                  onSettle={account?.name === 'Money Owed' && tx.toAccountId === account.id && !tx.isSettled ? () => initiateIndividualSettle(tx) : undefined}
                 />
               ))}
             </div>
@@ -261,6 +314,70 @@ export default function AccountDetails() {
             className="w-full bg-coral text-bg py-4 rounded-2xl font-bold active:scale-[0.98] transition-transform disabled:opacity-50"
           >
             Confirm Payment
+          </button>
+        </div>
+      </Drawer>
+
+      {/* ─── Settle Split Drawer ─── */}
+      <Drawer open={showSettleSplit} onClose={() => { setShowSettleSplit(false); setTxToSettle(null); }} title="Settle Split">
+        <div className="p-4 space-y-4">
+          <div>
+            <label className="text-[11px] font-bold text-text-secondary ml-1 uppercase tracking-wider block mb-1.5">Amount Received</label>
+            <div className="flex bg-elevated p-1 rounded-xl mb-3">
+              <button 
+                onClick={() => setSettleType('full')}
+                className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${settleType === 'full' ? 'bg-surface shadow-sm text-text-primary' : 'text-text-secondary'}`}
+              >
+                Full Balance
+              </button>
+              <button 
+                onClick={() => setSettleType('custom')}
+                className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${settleType === 'custom' ? 'bg-surface shadow-sm text-text-primary' : 'text-text-secondary'}`}
+              >
+                Other
+              </button>
+            </div>
+            
+            {settleType === 'full' ? (
+              <div className="text-center py-4 bg-surface rounded-2xl border border-border">
+                <div className="text-sm text-text-secondary mb-1">You received</div>
+                <div className="text-2xl font-bold text-income">{formatINR(account.computedBalance)}</div>
+              </div>
+            ) : (
+              <div className="input-premium-wrapper">
+                <span className="text-lg font-bold text-text-secondary mr-2">₹</span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  value={customSettleAmount}
+                  onChange={e => setCustomSettleAmount(e.target.value)}
+                  placeholder="0"
+                  className="font-semibold text-lg"
+                />
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="text-[11px] font-bold text-text-secondary ml-1 uppercase tracking-wider block mb-1.5">Receive To Account</label>
+            <select
+              value={settleToAccount}
+              onChange={e => setSettleToAccount(e.target.value)}
+              className="input-premium"
+            >
+              <option value="" disabled>Select Account</option>
+              {accountsWithBalances.filter(a => a.id !== id && a.group !== 'Credit Card').map(a => (
+                <option key={a.id} value={a.id}>{a.name} ({formatINR(a.computedBalance)})</option>
+              ))}
+            </select>
+          </div>
+
+          <button 
+            onClick={handleSettleSplit}
+            disabled={!settleToAccount || (settleType === 'custom' && (!customSettleAmount || Number(customSettleAmount) <= 0))}
+            className="w-full bg-income text-bg py-4 rounded-2xl font-bold active:scale-[0.98] transition-transform disabled:opacity-50"
+          >
+            Confirm Received
           </button>
         </div>
       </Drawer>

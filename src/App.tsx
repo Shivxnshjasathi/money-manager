@@ -15,6 +15,8 @@ import BottomNav from './components/BottomNav';
 import { seedDatabase, processRecurringTransactions } from './db';
 import { useTheme } from './hooks';
 import './index.css';
+import { isBiometricLockEnabled, unlockWithBiometrics } from './utils/auth';
+import { Fingerprint, Lock, Loader2 } from 'lucide-react';
 
 import { AnimatePresence } from 'framer-motion';
 import PageTransition from './components/PageTransition';
@@ -60,7 +62,24 @@ function AppRoutes() {
 
 function App() {
   const [ready, setReady] = useState(false);
+  const [isLocked, setIsLocked] = useState(isBiometricLockEnabled());
+  const [unlocking, setUnlocking] = useState(false);
   const theme = useTheme((state) => state.theme);
+
+  const handleUnlock = async () => {
+    setUnlocking(true);
+    const success = await unlockWithBiometrics();
+    setUnlocking(false);
+    if (success) {
+      setIsLocked(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isLocked) {
+      handleUnlock();
+    }
+  }, []);
 
   useEffect(() => {
     seedDatabase()
@@ -118,6 +137,37 @@ function App() {
           {[...Array(5)].map((_, i) => (
             <div key={i} className={`w-12 h-12 rounded-full ${i === 2 ? 'bg-coral/30 -mt-6 border-4 border-bg' : 'bg-surface/50'}`}></div>
           ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (isLocked) {
+    return (
+      <div className="flex justify-center min-h-dvh bg-black">
+        <div className="flex flex-col items-center justify-center w-full max-w-md h-dvh bg-bg text-text-primary px-6">
+          <div className="w-24 h-24 rounded-full bg-coral/10 flex items-center justify-center mb-6 shadow-[0_0_40px_rgba(255,107,107,0.2)]">
+            <Lock size={40} className="text-coral" />
+          </div>
+          <h1 className="text-2xl font-bold mb-2 tracking-tight">App Locked</h1>
+          <p className="text-text-secondary text-center text-sm mb-12">
+            Use your device's biometric authentication to unlock.
+          </p>
+          
+          <button
+            onClick={handleUnlock}
+            disabled={unlocking}
+            className="flex items-center justify-center gap-3 w-full max-w-[280px] bg-coral text-bg py-4 rounded-2xl font-semibold active:scale-95 transition-transform disabled:opacity-70 disabled:active:scale-100"
+          >
+            {unlocking ? (
+              <Loader2 size={22} className="animate-spin" />
+            ) : (
+              <>
+                <Fingerprint size={22} />
+                Unlock App
+              </>
+            )}
+          </button>
         </div>
       </div>
     );
