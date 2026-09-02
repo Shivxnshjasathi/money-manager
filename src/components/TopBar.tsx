@@ -12,10 +12,11 @@ interface TopBarProps {
   onSearch?: () => void;
   showFilter?: boolean;
   onFilter?: () => void;
+  isScrolled?: boolean;
 }
 
 export default function TopBar({
-  title, onPrev, onNext, income, expense, showSearch, onSearch, showFilter, onFilter,
+  title, onPrev, onNext, income, expense, showSearch, onSearch, showFilter, onFilter, isScrolled
 }: TopBarProps) {
   const total = (income || 0) - (expense || 0);
 
@@ -70,32 +71,31 @@ export default function TopBar({
       </div>
 
       {/* Stats row */}
-      {income !== undefined && expense !== undefined && (
-        <motion.div 
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.1 }}
-          className="flex justify-between px-4 py-3 gap-2"
-        >
-          {[
-            { label: 'Income', value: income, color: 'text-income' },
-            { label: 'Expense', value: expense, color: 'text-expense' },
-            { label: 'Total', value: total, color: total >= 0 ? 'text-income' : 'text-expense' },
-          ].map((item, i) => (
-            <motion.div
-              key={item.label}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3, delay: 0.1 + i * 0.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="flex-1 flex flex-col items-center justify-center bg-surface/50 backdrop-blur-md rounded-2xl py-3 border border-border/50 shadow-sm hover:shadow-md transition-shadow"
-            >
-              <span className="text-text-tertiary text-[10px] font-bold uppercase tracking-wider mb-1">{item.label}</span>
-              <span className={`${item.color} font-bold tracking-tight text-[15px]`}>{formatINR(item.value)}</span>
-            </motion.div>
-          ))}
-        </motion.div>
-      )}
+      <AnimatePresence initial={false}>
+        {income !== undefined && expense !== undefined && !isScrolled && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0, scale: 0.95 }}
+            transition={{ duration: 0.25, ease: "easeInOut" }}
+            className="flex justify-between px-4 pb-3 pt-1 gap-2 overflow-hidden"
+          >
+            {[
+              { label: 'Income', value: income, color: 'text-income' },
+              { label: 'Expense', value: expense, color: 'text-expense' },
+              { label: 'Total', value: total, color: total >= 0 ? 'text-income' : 'text-expense' },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="flex-1 flex flex-col items-center justify-center bg-surface/50 backdrop-blur-md rounded-2xl py-3 border border-border/50 shadow-sm transition-shadow"
+              >
+                <span className="text-text-tertiary text-[10px] font-bold uppercase tracking-wider mb-1">{item.label}</span>
+                <span className={`${item.color} font-bold tracking-tight text-[15px]`}>{formatINR(item.value)}</span>
+              </div>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

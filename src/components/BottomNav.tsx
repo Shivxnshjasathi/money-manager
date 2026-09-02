@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { CalendarDays, PieChart, Wallet, MoreHorizontal, Plus } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { playFeedback } from '../utils/feedback';
 
 const navItems = [
   { to: '/transactions', icon: CalendarDays, label: 'Trans.' },
@@ -13,12 +14,13 @@ export default function BottomNav() {
   const navigate = useNavigate();
 
   return (
-    <div className="fixed bottom-4 left-5 right-5 pointer-events-none z-50">
-      <nav className="relative flex items-center justify-between px-4 h-12 bg-surface/95 backdrop-blur-3xl border border-border rounded-full shadow-[0_8px_32px_-4px_rgba(0,0,0,0.4)] pointer-events-auto max-w-md mx-auto">
+    <div className="absolute bottom-4 left-5 right-5 pointer-events-none z-50">
+      <nav className="relative flex items-center justify-between px-4 h-12 bg-surface/95 backdrop-blur-3xl border border-border rounded-full shadow-[0_8px_32px_-4px_rgba(0,0,0,0.4)] pointer-events-auto w-full max-w-md mx-auto">
         {navItems.map((item, idx) => (
           <NavLink
             key={item.to}
             to={item.to}
+            onClick={() => playFeedback.tap()}
             className={({ isActive }) =>
               `flex-1 flex flex-col items-center justify-center h-full transition-all duration-300
               ${idx === 1 ? 'mr-10' : ''} ${idx === 2 ? 'ml-10' : ''}
@@ -54,7 +56,7 @@ export default function BottomNav() {
             whileTap={{ scale: 0.85, rotate: 45 }}
             whileHover={{ scale: 1.1 }}
             transition={{ type: 'spring', stiffness: 400, damping: 15 }}
-            onClick={() => navigate('/add')}
+            onClick={() => { playFeedback.tap(); navigate('/add'); }}
             className="relative w-[52px] h-[52px] rounded-[20px] bg-coral text-bg
                        flex items-center justify-center shadow-lg shadow-coral/30 border-[3px] border-bg"
             aria-label="Add transaction"

@@ -24,11 +24,13 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   const hideNav = location.pathname === '/add' || location.pathname.startsWith('/accounts/') || location.pathname === '/subscriptions';
 
   return (
-    <div className="flex flex-col h-dvh bg-bg text-text-primary overflow-hidden selection:bg-coral/30">
-      <main className={`flex-1 flex flex-col overflow-hidden relative ${!hideNav ? 'pb-14' : ''}`}>
-        {children}
-      </main>
-      {!hideNav && <BottomNav />}
+    <div className="flex justify-center min-h-dvh bg-black">
+      <div className="@container flex flex-col w-full max-w-md h-dvh bg-bg text-text-primary overflow-hidden selection:bg-coral/30 relative shadow-2xl ring-1 ring-border/20 md:border-x md:border-border">
+        <main className={`flex-1 flex flex-col overflow-hidden relative ${!hideNav ? 'pb-14' : ''}`}>
+          {children}
+        </main>
+        {!hideNav && <BottomNav />}
+      </div>
     </div>
   );
 }
@@ -78,12 +80,43 @@ function App() {
 
   if (!ready) {
     return (
-      <div className="flex items-center justify-center h-screen bg-bg">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-coral flex items-center justify-center text-bg text-2xl font-bold animate-pulse">
-            M
-          </div>
-          <span className="text-text-secondary text-sm">Loading…</span>
+      <div className="flex flex-col h-screen w-full bg-bg px-4 overflow-hidden pt-[env(safe-area-inset-top)] relative">
+        {/* Shimmer effect overlay */}
+        <div className="absolute inset-0 z-50 pointer-events-none w-[200%] animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/5 to-transparent skew-x-[-20deg] translate-x-[-100%]"></div>
+        
+        {/* TopBar Skeleton */}
+        <div className="h-14 flex items-center justify-between mb-2 mt-2">
+          <div className="w-12 h-12 bg-surface/50 rounded-full"></div>
+          <div className="w-32 h-6 bg-surface/50 rounded-lg"></div>
+          <div className="w-12 h-12 bg-surface/50 rounded-full"></div>
+        </div>
+        
+        {/* Tabs Skeleton */}
+        <div className="flex gap-2 mb-6 h-10 w-48 mx-auto bg-surface/50 rounded-2xl p-1"></div>
+
+        {/* Transactions Skeleton */}
+        <div className="flex flex-col gap-3">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="w-full h-[76px] bg-surface/40 rounded-2xl border border-border/20 p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-2xl bg-surface/60"></div>
+                <div className="flex flex-col gap-2">
+                  <div className="w-24 h-4 bg-surface/60 rounded"></div>
+                  <div className="w-16 h-3 bg-surface/40 rounded"></div>
+                </div>
+              </div>
+              <div className="flex flex-col gap-2 items-end">
+                <div className="w-16 h-4 bg-surface/60 rounded"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Bottom Nav Skeleton */}
+        <div className="absolute bottom-0 left-0 right-0 h-[88px] bg-bg/85 backdrop-blur-xl border-t border-border flex items-center justify-around px-2 pb-[env(safe-area-inset-bottom)]">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className={`w-12 h-12 rounded-full ${i === 2 ? 'bg-coral/30 -mt-6 border-4 border-bg' : 'bg-surface/50'}`}></div>
+          ))}
         </div>
       </div>
     );

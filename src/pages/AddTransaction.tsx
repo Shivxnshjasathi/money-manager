@@ -9,6 +9,7 @@ import { db } from '../db';
 import type { TransactionType, IAccount } from '../types';
 import { useCategories, useAccountBalances, useAllTransactions, useSpeechRecognition } from '../hooks';
 import { parseQuickAdd } from '../nlp';
+import { playFeedback } from '../utils/feedback';
 
 export default function AddTransaction() {
   const navigate = useNavigate();
@@ -21,7 +22,7 @@ export default function AddTransaction() {
   const [isSmartAddExpanded, setIsSmartAddExpanded] = useState(false);
   const { isListening, setIsListening } = useSpeechRecognition(setQuickAddText);
   
-  const [currency, setCurrency] = useState('INR');
+  const [currency] = useState('INR');
   const RATES: Record<string, number> = { INR: 1, USD: 83.5, EUR: 90.2, GBP: 105.4, AED: 22.7, JPY: 0.55 };
 
   const [isSplit, setIsSplit] = useState(false);
@@ -37,6 +38,7 @@ export default function AddTransaction() {
   const [description, setDescription] = useState('');
   const [attachment, setAttachment] = useState<string | undefined>(undefined);
   const [isRecurring, setIsRecurring] = useState(false);
+  const [showMoreDetails, setShowMoreDetails] = useState(false);
   const [frequency, setFrequency] = useState<'daily'|'weekly'|'monthly'|'yearly'>('monthly');
   const [showCatPicker, setShowCatPicker] = useState(false);
   const [showAccPicker, setShowAccPicker] = useState(false);
@@ -212,6 +214,8 @@ export default function AddTransaction() {
       }
     }
 
+    playFeedback.success();
+
     if (andContinue) {
       resetForm();
     } else {
@@ -281,68 +285,78 @@ export default function AddTransaction() {
       </div>
 
       {/* Type Segmented Control */}
-      <div className="flex mx-4 mb-4 bg-surface rounded-full overflow-hidden border border-border p-1">
+      <div className="flex mx-4 mt-2 bg-elevated/50 backdrop-blur-md rounded-2xl p-1.5 border border-border/30 relative">
         {(['income', 'expense', 'transfer'] as TransactionType[]).map(t => {
           const isActive = type === t;
-          const color = t === 'income' ? 'text-income' : t === 'expense' ? 'text-expense' : 'text-transfer';
+          const color = t === 'income' ? 'text-income' : t === 'expense' ? 'text-expense' : 'text-text-primary';
           return (
             <button
               key={t}
               onClick={() => { setType(t); setSelectedCategory(''); }}
-              className={`flex-1 py-2 text-sm font-semibold capitalize transition-all duration-200 rounded-full
-                ${isActive ? `${color} bg-elevated shadow-sm` : 'text-text-secondary'}`}
+              className={`flex-1 relative py-2.5 text-sm font-semibold capitalize rounded-xl
+                ${isActive ? color : 'text-text-secondary hover:text-text-primary transition-colors'}`}
             >
-              {t}
+              {isActive && (
+                <motion.div
+                  layoutId="activeTab"
+                  className="absolute inset-0 bg-surface shadow-sm ring-1 ring-border/50 rounded-xl"
+                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                />
+              )}
+              <span className="relative z-10">{t}</span>
             </button>
           );
         })}
       </div>
 
-
-      {/* Amount Row */}
-      <div className="flex justify-center py-8">
+      {/* Amount Hero Section */}
+      <motion.div 
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: "spring", damping: 20, stiffness: 300 }}
+        className="flex justify-center py-6 sm:py-10 mt-2"
+      >
         <div className="flex-1 flex flex-col items-center">
-          <span className="text-[10px] font-bold tracking-widest text-text-secondary uppercase mb-2">Amount</span>
-          <div className="flex items-end justify-center w-full">
-            <div className="flex-1 flex justify-end pr-2 pb-1.5">
-              <select 
-                value={currency} 
-                onChange={e => setCurrency(e.target.value)}
-                className="bg-transparent text-2xl font-medium text-text-tertiary outline-none appearance-none cursor-pointer hover:text-text-secondary"
-              >
-                {Object.keys(RATES).map(c => <option key={c} value={c}>{c === 'INR' ? '₹' : c}</option>)}
-              </select>
-            </div>
+          <div className="flex items-center justify-center w-full px-4 sm:px-8">
+            <span className="text-3xl sm:text-4xl font-medium text-text-tertiary mr-1 pb-1">₹</span>
             <input
-              type="number"
+              type="text"
+              inputMode="decimal"
               value={amount}
-              onChange={e => setAmount(e.target.value)}
+              onChange={e => {
+                const val = e.target.value.replace(/[^0-9.]/g, '');
+                if (val.split('.').length > 2) return;
+                setAmount(val);
+              }}
               placeholder="0"
-              className="bg-transparent text-5xl font-bold text-text-primary outline-none text-center placeholder:text-text-tertiary/30 tracking-tight"
+              className="bg-transparent text-5xl sm:text-6xl font-bold text-text-primary outline-none text-center placeholder:text-text-tertiary/20 tracking-tight max-w-full"
               style={{ width: `${Math.max(1, amount.length)}ch` }}
               autoFocus
             />
-            <div className="flex-1"></div>
           </div>
-          {currency !== 'INR' && (
-            <span className="text-xs text-coral mt-2 font-medium">≈ ₹{((Number(amount)||0) * RATES[currency]).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
-          )}
         </div>
-      </div>
+      </motion.div>
 
-      {/* FORM CARD */}
-      <div className="flex-1 min-h-0 bg-surface rounded-t-[32px] px-4 pt-6 pb-20 shadow-[0_-8px_30px_rgba(0,0,0,0.5)] overflow-y-auto">
-        
-        {/* Date Row */}
-        <div className="flex items-center py-4 border-b border-border/50 group">
-          <div className="w-12 h-12 rounded-full bg-elevated flex items-center justify-center text-text-secondary mr-4 group-active:scale-95 transition-transform">
-            <Calendar size={20} />
-          </div>
-          <div className="flex-1 flex flex-col justify-center relative">
-            <span className="text-[10px] font-bold tracking-widest text-text-secondary uppercase mb-0.5">Date</span>
-            <span className="text-base font-semibold text-text-primary">
-              {format(new Date(date), 'dd/MM/yyyy')}
-            </span>
+      {/* FORM CARD (Sleek List) */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1, type: "spring", damping: 25, stiffness: 200 }}
+        className="flex-1 min-h-0 px-4 pb-28 overflow-y-auto"
+      >
+        <div className="bg-surface/50 backdrop-blur-xl border border-border/30 rounded-3xl overflow-hidden flex flex-col">
+          
+          {/* Date Row */}
+          <div className="flex items-center py-3.5 px-4 border-b border-border/30 group relative">
+            <div className="w-9 h-9 rounded-xl bg-elevated flex items-center justify-center text-text-primary mr-4 shrink-0 shadow-sm border border-border/50">
+              <Calendar size={18} />
+            </div>
+            <div className="flex-1 flex items-center justify-between min-w-0">
+              <span className="text-[15px] font-medium text-text-primary">Date</span>
+              <span className="text-[15px] font-medium text-text-secondary">
+                {format(new Date(date), 'dd/MM/yyyy')}
+              </span>
+            </div>
             <input
               type="date"
               value={date}
@@ -350,187 +364,206 @@ export default function AddTransaction() {
               className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
             />
           </div>
-          <Calendar size={18} className="text-text-tertiary" />
-        </div>
-        
-        {/* Category Row */}
-        {type !== 'transfer' && (
-          <button onClick={() => setShowCatPicker(true)} className="w-full flex items-center py-4 border-b border-border/50 text-left group">
-            <div className="w-12 h-12 rounded-full bg-elevated flex items-center justify-center text-text-secondary mr-4 group-active:scale-95 transition-transform">
-              <Tag size={20} />
+          
+          {/* Category Row */}
+          {type !== 'transfer' && (
+            <button onClick={() => setShowCatPicker(true)} className="w-full flex items-center py-3.5 px-4 border-b border-border/30 text-left active:bg-elevated transition-colors">
+              <div className="w-9 h-9 rounded-xl bg-elevated flex items-center justify-center text-text-primary mr-4 shrink-0 shadow-sm border border-border/50">
+                <Tag size={18} />
+              </div>
+              <div className="flex-1 flex items-center justify-between min-w-0 pr-2">
+                <span className="text-[15px] font-medium text-text-primary">Category</span>
+                {selectedCatObj ? (
+                  <span className="text-[15px] font-medium text-text-secondary flex items-center gap-1.5">
+                    <span>{selectedCatObj.icon}</span> {selectedCatObj.name}
+                  </span>
+                ) : (
+                  <span className="text-[15px] font-medium text-text-tertiary">Select</span>
+                )}
+              </div>
+              <ChevronRight size={18} className="text-text-tertiary shrink-0" />
+            </button>
+          )}
+
+          {/* Account Row */}
+          <button onClick={() => setShowAccPicker(true)} className="w-full flex items-center py-3.5 px-4 border-b border-border/30 text-left active:bg-elevated transition-colors">
+            <div className="w-9 h-9 rounded-xl bg-elevated flex items-center justify-center text-text-primary mr-4 shrink-0 shadow-sm border border-border/50">
+              <Wallet size={18} />
             </div>
-            <div className="flex-1 flex flex-col justify-center">
-              <span className="text-[10px] font-bold tracking-widest text-text-secondary uppercase mb-0.5">Category</span>
-              {selectedCatObj ? (
-                <span className="text-base font-semibold text-text-primary flex items-center gap-2">
-                  <span>{selectedCatObj.icon}</span> {selectedCatObj.name}
-                </span>
-              ) : (
-                <span className="text-base font-semibold text-text-primary">Select category</span>
-              )}
+            <div className="flex-1 flex items-center justify-between min-w-0 pr-2">
+              <span className="text-[15px] font-medium text-text-primary">{type === 'transfer' ? 'From' : 'Account'}</span>
+              <span className="text-[15px] font-medium text-text-secondary truncate ml-4">{selectedAccObj ? selectedAccObj.name : 'Select'}</span>
             </div>
-            <ChevronRight size={18} className="text-text-tertiary" />
+            <ChevronRight size={18} className="text-text-tertiary shrink-0" />
           </button>
-        )}
 
-        {/* Account Row */}
-        <button onClick={() => setShowAccPicker(true)} className="w-full flex items-center py-4 border-b border-border/50 text-left group">
-          <div className="w-12 h-12 rounded-full bg-elevated flex items-center justify-center text-text-secondary mr-4 group-active:scale-95 transition-transform">
-            <Wallet size={20} />
-          </div>
-          <div className="flex-1 flex flex-col justify-center">
-            <span className="text-[10px] font-bold tracking-widest text-text-secondary uppercase mb-0.5">{type === 'transfer' ? 'From Account' : 'Account'}</span>
-            <span className="text-base font-semibold text-text-primary">{selectedAccObj ? selectedAccObj.name : 'Select account'}</span>
-          </div>
-          <ChevronRight size={18} className="text-text-tertiary" />
-        </button>
+          {/* To Account (transfer only) */}
+          {type === 'transfer' && (
+            <button onClick={() => setShowToAccPicker(true)} className="w-full flex items-center py-3.5 px-4 border-b border-border/30 text-left active:bg-elevated transition-colors">
+              <div className="w-9 h-9 rounded-xl bg-elevated flex items-center justify-center text-text-primary mr-4 shrink-0 shadow-sm border border-border/50">
+                <Wallet size={18} />
+              </div>
+              <div className="flex-1 flex items-center justify-between min-w-0 pr-2">
+                <span className="text-[15px] font-medium text-text-primary">To</span>
+                <span className="text-[15px] font-medium text-text-secondary truncate ml-4">{selectedToAccObj ? selectedToAccObj.name : 'Select'}</span>
+              </div>
+              <ChevronRight size={18} className="text-text-tertiary shrink-0" />
+            </button>
+          )}
 
-        {/* To Account (transfer only) */}
-        {type === 'transfer' && (
-          <button onClick={() => setShowToAccPicker(true)} className="w-full flex items-center py-4 border-b border-border/50 text-left group">
-            <div className="w-12 h-12 rounded-full bg-elevated flex items-center justify-center text-text-secondary mr-4 group-active:scale-95 transition-transform">
-              <Wallet size={20} />
-            </div>
-            <div className="flex-1 flex flex-col justify-center">
-              <span className="text-[10px] font-bold tracking-widest text-text-secondary uppercase mb-0.5">To Account</span>
-              <span className="text-base font-semibold text-text-primary">{selectedToAccObj ? selectedToAccObj.name : 'Select account'}</span>
-            </div>
-            <ChevronRight size={18} className="text-text-tertiary" />
-          </button>
-        )}
+          <AnimatePresence initial={false}>
+            {showMoreDetails && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="overflow-hidden flex flex-col"
+              >
+                {/* Note Row */}
+                <div className="flex items-center py-3.5 px-4 border-b border-border/30">
+                  <div className="w-9 h-9 rounded-xl bg-elevated flex items-center justify-center text-text-primary mr-4 shrink-0 shadow-sm border border-border/50">
+                    <FileText size={18} />
+                  </div>
+                  <div className="flex-1 flex items-center min-w-0">
+                    <input
+                      type="text"
+                      value={note}
+                      onChange={e => setNote(e.target.value)}
+                      placeholder="Note"
+                      className="w-full bg-transparent text-[15px] font-medium text-text-primary outline-none placeholder:text-text-tertiary"
+                    />
+                  </div>
+                  <label className="cursor-pointer shrink-0 ml-2 p-1">
+                    <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                    <Camera size={18} className="text-text-tertiary hover:text-text-primary transition-colors" />
+                  </label>
+                </div>
 
-        {/* Note Row */}
-        <div className="flex items-center py-4 border-b border-border/50 group">
-          <div className="w-12 h-12 rounded-full bg-elevated flex items-center justify-center text-text-secondary mr-4 group-active:scale-95 transition-transform">
-            <FileText size={20} />
-          </div>
-          <div className="flex-1 flex flex-col justify-center">
-            <span className="text-[10px] font-bold tracking-widest text-text-secondary uppercase mb-0.5">Note</span>
-            <input
-              type="text"
-              value={note}
-              onChange={e => setNote(e.target.value)}
-              placeholder="Add note"
-              className="bg-transparent text-base font-semibold text-text-primary outline-none placeholder:text-text-tertiary"
-            />
-          </div>
-          <label className="cursor-pointer shrink-0">
-            <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-            <Camera size={20} className="text-text-tertiary hover:text-text-primary transition-colors" />
-          </label>
-        </div>
+                {/* Description Row */}
+                <div className="flex items-center py-3.5 px-4 border-b border-border/30">
+                  <div className="w-9 h-9 rounded-xl bg-elevated flex items-center justify-center text-text-primary mr-4 shrink-0 shadow-sm border border-border/50">
+                    <AlignLeft size={18} />
+                  </div>
+                  <div className="flex-1 flex items-center min-w-0">
+                    <input
+                      type="text"
+                      value={description}
+                      onChange={e => setDescription(e.target.value)}
+                      placeholder="Description"
+                      className="w-full bg-transparent text-[15px] font-medium text-text-primary outline-none placeholder:text-text-tertiary"
+                    />
+                  </div>
+                </div>
 
-        {/* Description Row */}
-        <div className="flex items-center py-4 border-b border-border/50 group">
-          <div className="w-12 h-12 rounded-full bg-elevated flex items-center justify-center text-text-secondary mr-4 group-active:scale-95 transition-transform">
-            <AlignLeft size={20} />
-          </div>
-          <div className="flex-1 flex flex-col justify-center">
-            <span className="text-[10px] font-bold tracking-widest text-text-secondary uppercase mb-0.5">Description</span>
-            <input
-              type="text"
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              placeholder="Description"
-              className="bg-transparent text-base font-semibold text-text-primary outline-none placeholder:text-text-tertiary"
-            />
-          </div>
-        </div>
-
-        {/* Split Expense Row */}
-        {type === 'expense' && (
-          <div className="flex items-center py-4 border-b border-border/50 group">
-            <div className="w-12 h-12 rounded-full bg-elevated flex items-center justify-center text-text-secondary mr-4 group-active:scale-95 transition-transform">
-              <SplitSquareHorizontal size={20} />
-            </div>
-            <div className="flex-1 flex flex-col justify-center">
-              <span className="text-[10px] font-bold tracking-widest text-text-secondary uppercase mb-0.5">Split Expense</span>
-              <div className="flex items-center">
-                <label className="relative inline-flex items-center cursor-pointer mr-4">
-                  <input type="checkbox" className="sr-only peer" checked={isSplit} onChange={e => setIsSplit(e.target.checked)} />
-                  <div className="w-11 h-6 bg-border/50 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-transparent after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-coral peer-checked:after:bg-bg shrink-0"></div>
-                </label>
-                {isSplit && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-text-secondary text-sm">Friend owes:</span>
-                    <div className="flex items-center bg-surface border border-border rounded-md px-2 py-1">
-                      <span className="text-text-tertiary text-sm mr-1">{currency === 'INR' ? '₹' : currency}</span>
-                      <input
-                        type="number"
-                        value={friendShare}
-                        onChange={e => setFriendShare(e.target.value)}
-                        placeholder="0"
-                        className="w-16 bg-transparent text-sm outline-none text-text-primary"
-                      />
+                {/* Split Expense Row */}
+                {type === 'expense' && (
+                  <div className="flex items-center py-3.5 px-4 border-b border-border/30">
+                    <div className="w-9 h-9 rounded-xl bg-elevated flex items-center justify-center text-text-primary mr-4 shrink-0 shadow-sm border border-border/50">
+                      <SplitSquareHorizontal size={18} />
+                    </div>
+                    <div className="flex-1 flex items-center justify-between min-w-0">
+                      <span className="text-[15px] font-medium text-text-primary">Split</span>
+                      <div className="flex items-center gap-3">
+                        {isSplit && (
+                          <div className="flex items-center bg-elevated border border-border/50 rounded-lg px-2 py-1 h-8">
+                            <span className="text-text-tertiary text-sm mr-1">₹</span>
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              value={friendShare}
+                              onChange={e => {
+                                const val = e.target.value.replace(/[^0-9.]/g, '');
+                                setFriendShare(val);
+                              }}
+                              placeholder="0"
+                              className="w-12 bg-transparent text-sm font-medium outline-none text-text-primary text-right"
+                            />
+                          </div>
+                        )}
+                        <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                          <input type="checkbox" className="sr-only peer" checked={isSplit} onChange={e => setIsSplit(e.target.checked)} />
+                          <div className="w-11 h-6 bg-border/30 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-transparent after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:border-gray-300/50 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-coral peer-checked:after:bg-bg shadow-inner"></div>
+                        </label>
+                      </div>
                     </div>
                   </div>
                 )}
-              </div>
-            </div>
-          </div>
-        )}
 
-        {/* Recurring Row */}
-        <div className="flex items-center py-4 group">
-          <div className="w-12 h-12 rounded-full bg-elevated flex items-center justify-center text-text-secondary mr-4 group-active:scale-95 transition-transform">
-            <Repeat size={20} />
-          </div>
-          <div className="flex-1 flex flex-col justify-center">
-            <span className="text-[10px] font-bold tracking-widest text-text-secondary uppercase mb-0.5">Recurring</span>
-            <div className="flex items-center">
-              <label className="relative inline-flex items-center cursor-pointer mr-4">
-                <input type="checkbox" className="sr-only peer" checked={isRecurring} onChange={e => setIsRecurring(e.target.checked)} />
-                <div className="w-11 h-6 bg-border/50 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-transparent after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-coral peer-checked:after:bg-bg shrink-0"></div>
-              </label>
-              {isRecurring && (
-                <div className="flex items-center gap-2">
-                  <select
-                    value={frequency}
-                    onChange={e => setFrequency(e.target.value as any)}
-                    className="bg-transparent text-base font-semibold outline-none border-none text-text-primary"
-                  >
-                    <option value="daily">Daily</option>
-                    <option value="weekly">Weekly</option>
-                    <option value="monthly">Monthly</option>
-                    <option value="yearly">Yearly</option>
-                  </select>
-                  <span className="text-[10px] text-text-tertiary font-bold tracking-wider uppercase">(Fixed)</span>
+                {/* Recurring Row */}
+                <div className="flex items-center py-3.5 px-4">
+                  <div className="w-9 h-9 rounded-xl bg-elevated flex items-center justify-center text-text-primary mr-4 shrink-0 shadow-sm border border-border/50">
+                    <Repeat size={18} />
+                  </div>
+                  <div className="flex-1 flex items-center justify-between min-w-0">
+                    <span className="text-[15px] font-medium text-text-primary">Recurring</span>
+                    <div className="flex items-center gap-3">
+                      {isRecurring && (
+                        <select
+                          value={frequency}
+                          onChange={e => setFrequency(e.target.value as any)}
+                          className="bg-transparent text-[15px] font-medium text-text-secondary outline-none border-none text-right appearance-none"
+                        >
+                          <option value="daily">Daily</option>
+                          <option value="weekly">Weekly</option>
+                          <option value="monthly">Monthly</option>
+                          <option value="yearly">Yearly</option>
+                        </select>
+                      )}
+                      <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                        <input type="checkbox" className="sr-only peer" checked={isRecurring} onChange={e => setIsRecurring(e.target.checked)} />
+                        <div className="w-11 h-6 bg-border/30 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-transparent after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:border-gray-300/50 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-coral peer-checked:after:bg-bg shadow-inner"></div>
+                      </label>
+                    </div>
+                  </div>
                 </div>
-              )}
-            </div>
-          </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <button 
+            onClick={() => setShowMoreDetails(!showMoreDetails)}
+            className="py-3.5 w-full text-center text-sm font-semibold text-text-tertiary hover:text-text-primary transition-colors border-t border-border/30 bg-elevated/30 flex items-center justify-center gap-1"
+          >
+            {showMoreDetails ? "Hide Options" : "More Options..."}
+          </button>
         </div>
         
-        {/* Attachment Preview (if any) */}
+        {/* Attachment Preview */}
         {attachment && (
-          <div className="relative mt-4">
-            <img src={attachment} alt="Receipt preview" className="w-full h-32 object-cover rounded-2xl border border-border" />
+          <div className="relative mt-4 rounded-3xl overflow-hidden border border-border/30 shadow-sm">
+            <img src={attachment} alt="Receipt preview" className="w-full h-40 object-cover" />
             <button 
               onClick={() => setAttachment(undefined)} 
-              className="absolute top-2 right-2 bg-surface/80 backdrop-blur-md rounded-full p-2 border border-border text-text-secondary hover:text-text-primary"
+              className="absolute top-3 right-3 bg-bg/50 backdrop-blur-md rounded-full p-2 border border-white/10 text-white hover:bg-bg/70 transition-colors"
             >
               <X size={16} /> 
             </button>
           </div>
         )}
-      </div>
+        
+        {/* Spacer to prevent overlap with floating button */}
+        <div className="h-32 shrink-0 w-full" />
+      </motion.div>
 
-      {/* Action Buttons */}
-      <div className="p-4 bg-elevated shrink-0 pb-[calc(16px+env(safe-area-inset-bottom))]">
-        <button
-          onClick={() => {
-            const isValid = amount.length > 0 && parseFloat(amount) > 0 && selectedAccount && (type === 'transfer' ? toAccount : selectedCategory);
-            if (isValid) handleSave(false);
-          }}
-          disabled={!(amount.length > 0 && parseFloat(amount) > 0 && selectedAccount && (type === 'transfer' ? toAccount : selectedCategory))}
-          className={`w-full py-4 rounded-full font-semibold transition-all active:scale-[0.98] ${
-            (amount.length > 0 && parseFloat(amount) > 0 && selectedAccount && (type === 'transfer' ? toAccount : selectedCategory))
-              ? 'bg-coral text-bg shadow-lg shadow-black/10'
-              : 'bg-surface border border-border text-text-secondary opacity-50'
-          }`}
-        >
-          Save
-        </button>
+      {/* Floating Save Button */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 pb-[calc(16px+env(safe-area-inset-bottom))] bg-gradient-to-t from-bg via-bg/80 to-transparent pointer-events-none z-20">
+        <div className="max-w-[440px] mx-auto pointer-events-auto">
+          <button
+            onClick={() => {
+              const isValid = amount.length > 0 && parseFloat(amount) > 0 && selectedAccount && (type === 'transfer' ? toAccount : selectedCategory);
+              if (isValid) handleSave(false);
+            }}
+            disabled={!(amount.length > 0 && parseFloat(amount) > 0 && selectedAccount && (type === 'transfer' ? toAccount : selectedCategory))}
+            className={`w-full py-4 rounded-2xl font-semibold transition-all active:scale-[0.98] shadow-lg backdrop-blur-xl ${
+              (amount.length > 0 && parseFloat(amount) > 0 && selectedAccount && (type === 'transfer' ? toAccount : selectedCategory))
+                ? 'bg-coral text-bg shadow-coral/20'
+                : 'bg-surface/80 border border-border/50 text-text-tertiary opacity-50'
+            }`}
+          >
+            Save Transaction
+          </button>
+        </div>
       </div>
 
       {/* Category Picker Drawer */}

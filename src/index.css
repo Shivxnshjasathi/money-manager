@@ -15,6 +15,23 @@
   --font-sans: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
+/* Dynamic root font sizing using media queries */
+html {
+  font-size: 14px; /* Base size for small phones */
+}
+
+@media (min-width: 375px) {
+  html {
+    font-size: 15px; /* Scale up slightly for medium phones */
+  }
+}
+
+@media (min-width: 428px) {
+  html {
+    font-size: 16px; /* Standard size for large phones and desktop container */
+  }
+}
+
 @layer base {
   :root {
     /* Dark Mode — Pure Premium Monochromatic */
@@ -115,6 +132,10 @@ select {
 @keyframes fadeOut {
   from { opacity: 1; }
   to { opacity: 0; }
+}
+@keyframes shimmer {
+  0% { transform: translateX(-100%) skewX(-20deg); }
+  100% { transform: translateX(200%) skewX(-20deg); }
 }
 
 .slide-up { animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards; }

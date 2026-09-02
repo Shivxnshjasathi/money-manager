@@ -34,6 +34,7 @@ export default function TransactionsList() {
   const [filterAccount, setFilterAccount] = useState<string>('all');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [txToDelete, setTxToDelete] = useState<string | null>(null);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   const rawTransactions = useTransactions(monthDate);
   const allTransactions = useAllTransactions();
@@ -77,14 +78,14 @@ export default function TransactionsList() {
     const balances: Record<string, number> = {};
     accounts.forEach(a => { balances[a.id] = a.balance; }); // Initial balances
     const txMap: Record<string, number> = {};
-    
+
     // Sort all transactions ascending to compute running balances chronologically
     const sorted = [...allTransactions].sort((a, b) => {
       const timeDiff = new Date(a.date).getTime() - new Date(b.date).getTime();
       if (timeDiff !== 0) return timeDiff;
       return allTransactions.indexOf(a) - allTransactions.indexOf(b); // Tie-breaker: insertion order ascending
     });
-    
+
     sorted.forEach(tx => {
       if (tx.type === 'income') {
         balances[tx.accountId] = (balances[tx.accountId] || 0) + tx.amount;
@@ -93,10 +94,10 @@ export default function TransactionsList() {
       } else if (tx.type === 'transfer') {
         balances[tx.accountId] = (balances[tx.accountId] || 0) - tx.amount;
         if (tx.toAccountId) {
-           balances[tx.toAccountId] = (balances[tx.toAccountId] || 0) + tx.amount;
+          balances[tx.toAccountId] = (balances[tx.toAccountId] || 0) + tx.amount;
         }
       }
-      txMap[tx.id] = balances[tx.accountId] || 0; 
+      txMap[tx.id] = balances[tx.accountId] || 0;
     });
     return txMap;
   }, [allTransactions, accounts]);
@@ -121,7 +122,7 @@ export default function TransactionsList() {
 
     // Sort groups descending by date
     const sortedKeys = Object.keys(map).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
-    
+
     const sortedGroups: Record<string, ITransaction[]> = {};
     sortedKeys.forEach(k => {
       // Sort transactions WITHIN day descending by date
@@ -164,7 +165,7 @@ export default function TransactionsList() {
     return (
       <div className="flex flex-col h-full w-full bg-bg">
         {/* Search Bar */}
-        <div 
+        <div
           className="px-4 pb-3 shrink-0 bg-bg border-b border-border flex items-center gap-3"
           style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
         >
@@ -236,11 +237,18 @@ export default function TransactionsList() {
         onSearch={() => setSearchOpen(true)}
         showFilter
         onFilter={() => setFilterOpen(true)}
+        isScrolled={isScrolled}
       />
 
       <Tabs tabs={VIEW_TABS} active={activeTab} onChange={setActiveTab} />
 
-      <div className="flex-1 overflow-y-auto">
+      <div 
+        className="flex-1 overflow-y-auto"
+        onScroll={(e) => {
+          const target = e.target as HTMLDivElement;
+          setIsScrolled(target.scrollTop > 20);
+        }}
+      >
         {/* ─── Daily View ─── */}
         {activeTab === 'Daily' && (
           <div className="fade-in">
@@ -322,10 +330,10 @@ export default function TransactionsList() {
                     <div className="pt-2">
                       {txs.map(tx => (
                         <div key={tx.id} className="px-4 mb-3">
-                          <TransactionItem 
-                            transaction={tx} 
-                            categories={categories} 
-                            accounts={accounts} 
+                          <TransactionItem
+                            transaction={tx}
+                            categories={categories}
+                            accounts={accounts}
                             runningBalance={runningBalances[tx.id]}
                             onLongPress={() => setTxToDelete(tx.id)}
                           />
@@ -520,7 +528,7 @@ export default function TransactionsList() {
       {/* ─── Delete Confirmation Drawer ─── */}
       <Drawer open={!!txToDelete} onClose={() => setTxToDelete(null)} title="Transaction Options">
         <div className="p-4 space-y-4">
-          <button 
+          <button
             onClick={() => {
               if (txToDelete) handleDeleteTx(txToDelete);
               setTxToDelete(null);
@@ -529,7 +537,7 @@ export default function TransactionsList() {
           >
             Delete Transaction
           </button>
-          <button 
+          <button
             onClick={() => setTxToDelete(null)}
             className="w-full bg-surface text-text-primary py-4 rounded-2xl font-bold active:scale-95 transition-transform"
           >
