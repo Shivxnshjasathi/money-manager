@@ -23,11 +23,18 @@ export const useTheme = create<ThemeState>((set) => ({
 interface UIState {
   isScrollingDown: boolean;
   setIsScrollingDown: (isDown: boolean) => void;
+  hideAmounts: boolean;
+  setHideAmounts: (hide: boolean) => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
   isScrollingDown: false,
   setIsScrollingDown: (isDown) => set({ isScrollingDown: isDown }),
+  hideAmounts: (localStorage.getItem('hideAmounts') === 'true'),
+  setHideAmounts: (hide) => set(() => {
+    localStorage.setItem('hideAmounts', String(hide));
+    return { hideAmounts: hide };
+  }),
 }));
 
 export function useGoals() {

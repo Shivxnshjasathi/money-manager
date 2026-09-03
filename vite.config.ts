@@ -23,10 +23,21 @@ export default defineConfig({
           { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
           { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },
           { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
-        ]
+        ],
+        share_target: {
+          action: '/sms-import',
+          method: 'GET',
+          params: {
+            title: 'title',
+            text: 'text',
+            url: 'url'
+          }
+        }
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        navigateFallback: 'index.html',
+        navigateFallbackAllowlist: [/^\/sms-import/, /^\/transactions/, /^\/stats/, /^\/accounts/, /^\/more/, /^\/add/, /^\/edit/, /^\/budgets/, /^\/goals/, /^\/notifications/, /^\/privacy-security/, /^\/subscriptions/],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

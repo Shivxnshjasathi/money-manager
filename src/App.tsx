@@ -11,6 +11,7 @@ import Goals from './pages/Goals';
 import Notifications from './pages/Notifications';
 import PrivacySecurity from './pages/PrivacySecurity';
 import Subscriptions from './pages/Subscriptions';
+import SmsImport from './pages/SmsImport';
 import BottomNav from './components/BottomNav';
 import { seedDatabase, processRecurringTransactions } from './db';
 import { useTheme } from './hooks';
@@ -56,6 +57,7 @@ function AppRoutes() {
         <Route path="/notifications" element={<PageTransition><Notifications /></PageTransition>} />
         <Route path="/privacy-security" element={<PageTransition><PrivacySecurity /></PageTransition>} />
         <Route path="/subscriptions" element={<PageTransition><Subscriptions /></PageTransition>} />
+        <Route path="/sms-import" element={<PageTransition><SmsImport /></PageTransition>} />
       </Routes>
     </AnimatePresence>
   );

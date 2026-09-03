@@ -1,5 +1,5 @@
-import { ChevronLeft, ChevronRight, Search, SlidersHorizontal } from 'lucide-react';
-import { formatINR } from '../hooks';
+import { ChevronLeft, ChevronRight, Search, SlidersHorizontal, Eye, EyeOff } from 'lucide-react';
+import { formatINR, useUIStore } from '../hooks';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface TopBarProps {
@@ -17,6 +17,7 @@ interface TopBarProps {
 export default function TopBar({
   title, onPrev, onNext, stats, showSearch, onSearch, showFilter, onFilter, isScrolled
 }: TopBarProps) {
+  const { hideAmounts, setHideAmounts } = useUIStore();
 
   return (
     <div className="bg-bg/85 backdrop-blur-xl pt-[env(safe-area-inset-top)] shrink-0 z-10 sticky top-0">
@@ -45,9 +46,14 @@ export default function TopBar({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 8 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="flex-1 flex items-center justify-center text-[17px] font-bold tracking-tight select-none truncate px-2"
+            className="flex-1 flex items-center justify-center text-[17px] font-bold tracking-tight select-none truncate px-2 gap-2"
           >
             {title}
+            {stats && stats.length > 0 && (
+              <button onClick={() => setHideAmounts(!hideAmounts)} className="p-1 text-text-secondary hover:text-text-primary transition-colors active:opacity-60">
+                {hideAmounts ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            )}
           </motion.div>
         </AnimatePresence>
         
@@ -70,7 +76,7 @@ export default function TopBar({
 
       {/* Stats row */}
       <AnimatePresence initial={false}>
-        {stats && stats.length > 0 && !isScrolled && (
+        {stats && stats.length > 0 && !isScrolled && !hideAmounts && (
           <motion.div 
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
@@ -84,7 +90,9 @@ export default function TopBar({
                 className="flex-1 flex flex-col items-center justify-center bg-surface/50 backdrop-blur-md rounded-2xl py-3 border border-border/50 shadow-sm transition-shadow"
               >
                 <span className="text-text-tertiary text-[10px] font-bold uppercase tracking-wider mb-1">{item.label}</span>
-                <span className={`${item.color} font-bold tracking-tight text-[15px]`}>{formatINR(item.value)}</span>
+                <span className={`${item.color} font-bold tracking-tight text-[15px]`}>
+                  {formatINR(item.value)}
+                </span>
               </div>
             ))}
           </motion.div>

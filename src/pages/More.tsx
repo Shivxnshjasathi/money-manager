@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings, Filter, Moon, Sun, Bell, ShieldCheck, ChevronRight, PieChart, FileDown, FileUp, Trash2, Footprints, ExternalLink, Repeat } from 'lucide-react';
+import { Settings, Filter, Moon, Sun, Bell, ShieldCheck, ChevronRight, PieChart, FileDown, FileUp, Trash2, Footprints, ExternalLink, Repeat, MessageSquareText } from 'lucide-react';
 import Drawer from '../components/Drawer';
 import { resetAllData, db } from '../db';
 import { v4 as uuidv4 } from 'uuid';
@@ -162,6 +162,7 @@ export default function More() {
     { icon: PieChart, label: 'Manage Budgets', onClick: () => navigate('/budgets') },
     { icon: Footprints, label: 'Savings Goals', onClick: () => navigate('/goals') },
     { icon: Repeat, label: 'Subscriptions & Bills', onClick: () => navigate('/subscriptions') },
+    { icon: MessageSquareText, label: 'Import from SMS', onClick: () => navigate('/sms-import') },
     { icon: FileDown, label: 'Export to CSV', onClick: handleExportCSV },
     { icon: FileUp, label: 'Import from CSV', onClick: () => fileInputRef.current?.click() },
     { icon: Filter, label: 'Filter Transactions', onClick: () => setShowFilterDrawer(true) },
