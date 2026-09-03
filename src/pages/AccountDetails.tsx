@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, CreditCard, CheckCircle } from 'lucide-react';
+import { ChevronLeft, CreditCard, CheckCircle, Settings, Trash2 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useAccountBalances, useAllTransactions, useCategories, useAccounts, formatINR } from '../hooks';
 import TransactionItem from '../components/TransactionItem';
@@ -25,6 +25,12 @@ export default function AccountDetails() {
   const [customSettleAmount, setCustomSettleAmount] = useState('');
   const [settleToAccount, setSettleToAccount] = useState<string>('');
   const [txToSettle, setTxToSettle] = useState<string | null>(null);
+
+  // Edit Account Drawer States
+  const [showEditAccount, setShowEditAccount] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editGroup, setEditGroup] = useState<any>('Bank Accounts');
+
 
   const accountsWithBalances = useAccountBalances();
   const allTransactions = useAllTransactions();
@@ -154,6 +160,35 @@ export default function AccountDetails() {
     setShowSettleSplit(true);
   };
 
+  const openEditDrawer = () => {
+    if (account) {
+      setEditName(account.name);
+      setEditGroup(account.group);
+      setShowEditAccount(true);
+    }
+  };
+
+  const handleUpdateAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!account || !editName.trim()) return;
+    await db.accounts.update(account.id, {
+      name: editName.trim(),
+      group: editGroup,
+      updatedAt: Date.now()
+    });
+    playFeedback.success();
+    setShowEditAccount(false);
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!account) return;
+    if (confirm('Are you sure you want to delete this account? Transactions will NOT be deleted, but they may become orphaned.')) {
+      await db.accounts.delete(account.id);
+      playFeedback.success();
+      navigate('/accounts');
+    }
+  };
+
   if (!account) {
     return (
       <div className="flex flex-col h-full bg-bg">
@@ -181,6 +216,9 @@ export default function AccountDetails() {
             <h1 className="font-semibold text-lg">{account.name}</h1>
             <p className="text-xs text-text-tertiary">{account.group}</p>
           </div>
+          <button onClick={openEditDrawer} className="p-2 -mr-2 text-text-secondary active:text-coral transition-colors">
+            <Settings size={22} />
+          </button>
         </div>
       </div>
 
@@ -401,6 +439,53 @@ export default function AccountDetails() {
             Cancel
           </button>
         </div>
+      </Drawer>
+
+      {/* ─── Edit Account Drawer ─── */}
+      <Drawer open={showEditAccount} onClose={() => setShowEditAccount(false)} title="Edit Account">
+        <form onSubmit={handleUpdateAccount} className="p-4 space-y-6">
+          <div className="space-y-4">
+            <div>
+              <label className="text-[11px] font-bold text-text-secondary ml-1 uppercase tracking-wider block mb-1.5">Account Name</label>
+              <input
+                type="text"
+                required
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                className="input-premium"
+                placeholder="e.g. Chase Checking"
+              />
+            </div>
+            
+            <div>
+              <label className="text-[11px] font-bold text-text-secondary ml-1 uppercase tracking-wider block mb-1.5">Account Group</label>
+              <select
+                value={editGroup}
+                onChange={(e) => setEditGroup(e.target.value)}
+                className="input-premium"
+              >
+                {['Cash', 'Bank Accounts', 'Credit Card', 'Card', 'Debit Card', 'Savings', 'Top-Up/Prepaid', 'Investments', 'Overdrafts', 'Loan', 'Insurance', 'Others'].map(g => (
+                  <option key={g} value={g}>{g}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            className="w-full bg-coral text-bg py-4 rounded-2xl font-bold active:scale-[0.98] transition-transform shadow-[0_4px_24px_rgba(255,107,107,0.3)]"
+          >
+            Save Changes
+          </button>
+          
+          <button
+            type="button"
+            onClick={handleDeleteAccount}
+            className="w-full border border-expense/20 text-expense py-4 rounded-2xl font-bold flex items-center justify-center gap-2 active:bg-expense/10 transition-colors"
+          >
+            <Trash2 size={18} /> Delete Account
+          </button>
+        </form>
       </Drawer>
     </div>
   );

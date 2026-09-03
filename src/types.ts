@@ -31,6 +31,7 @@ export interface ITransaction {
   superCategory?: 'needs' | 'wants' | 'investment' | ''; // Optional super category
   isSettled?: boolean; // For split transactions
   createdAt?: number; // Timestamp for tie-breaking chronological sorts
+  updatedAt?: number; // Timestamp for cloud sync conflict resolution
 }
 
 export interface IGoal {
@@ -41,6 +42,7 @@ export interface IGoal {
   deadline?: string;
   color: string;
   icon?: string;
+  updatedAt?: number;
 }
 
 export interface IRecurringTransaction {
@@ -56,6 +58,7 @@ export interface IRecurringTransaction {
   frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
   startDate: string;
   nextRunDate: string;
+  updatedAt?: number;
 }
 
 export interface IBudget {
@@ -63,6 +66,7 @@ export interface IBudget {
   categoryId: string; // 'overall' for total budget, or specific category ID
   amount: number;
   yearMonth: string; // e.g., '2026-08'
+  updatedAt?: number;
 }
 
 export interface IAccount {
@@ -72,6 +76,7 @@ export interface IAccount {
   balance: number;
   settlementDate: number;
   paymentDate: number;
+  updatedAt?: number;
 }
 
 export interface ICategory {
@@ -79,4 +84,5 @@ export interface ICategory {
   name: string;
   icon: string;
   type: 'income' | 'expense';
+  updatedAt?: number;
 }

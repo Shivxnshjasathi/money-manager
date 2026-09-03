@@ -131,12 +131,18 @@ export default function TransactionsList() {
 
   const topBarStats = useMemo(() => {
     const splitThisMonth = totalExpense - myExpense;
+    const moneyOwedAcc = accounts.find(a => a.name === 'Money Owed');
     
     if (splitThisMonth > 0) {
       return [
         { label: 'TOTAL EXPENSE', value: totalExpense, color: 'text-text-primary' },
         { label: 'MY EXPENSE', value: myExpense, color: 'text-expense' },
-        { label: 'MONEY OWED', value: splitThisMonth, color: 'text-income' }
+        { 
+          label: 'MONEY OWED', 
+          value: splitThisMonth, 
+          color: 'text-income',
+          onClick: moneyOwedAcc ? () => navigate(`/account/${moneyOwedAcc.id}`) : undefined
+        }
       ];
     }
     

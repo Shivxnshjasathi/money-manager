@@ -1,11 +1,14 @@
 import { useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings, Filter, Moon, Sun, Bell, ShieldCheck, ChevronRight, PieChart, FileDown, FileUp, Trash2, Footprints, ExternalLink, Repeat, MessageSquareText } from 'lucide-react';
+import { Settings, Filter, Moon, Sun, Bell, ShieldCheck, ChevronRight, PieChart, FileDown, FileUp, Trash2, Footprints, ExternalLink, Repeat, MessageSquareText, Cloud, WifiOff, RefreshCw, LogOut, User } from 'lucide-react';
 import Drawer from '../components/Drawer';
 import { resetAllData, db } from '../db';
 import { v4 as uuidv4 } from 'uuid';
 import { useAllTransactions, useAccounts, useCategories, useTheme } from '../hooks';
 import { motion, type Variants } from 'framer-motion';
+import { getCurrentUser, getAppMode, setAppMode, signOut as firebaseSignOut } from '../firebase';
+import { fullSync } from '../utils/syncService';
+import type { User as FirebaseUser } from 'firebase/auth';
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -31,6 +34,37 @@ export default function More() {
   const accounts = useAccounts();
   const categories = useCategories();
   const { theme, toggleTheme } = useTheme();
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(getCurrentUser());
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState('');
+  const appMode = getAppMode();
+
+  const handleSync = async () => {
+    setSyncing(true);
+    setSyncMessage('');
+    try {
+      const result = await fullSync();
+      setSyncMessage(`Synced! ${result.pulled} pulled, ${result.pushed} pushed`);
+    } catch {
+      setSyncMessage('Sync failed.');
+    } finally {
+      setSyncing(false);
+      setTimeout(() => setSyncMessage(''), 3000);
+    }
+  };
+
+  const handleSignOut = async () => {
+    if (confirm('Sign out? Your data will remain on this device.')) {
+      await firebaseSignOut();
+      setAppMode('offline');
+      setFirebaseUser(null);
+    }
+  };
+
+  const handleSwitchToCloud = async () => {
+    localStorage.removeItem('appMode');
+    window.location.reload();
+  };
 
   // Export to CSV
   const handleExportCSV = useCallback(() => {
@@ -209,6 +243,77 @@ export default function More() {
               <span className="text-[10px] text-text-tertiary uppercase tracking-wider font-bold mt-0.5 block">Accounts</span>
             </div>
           </div>
+        </div>
+
+        {/* Cloud Account Section */}
+        <div className="px-4 mt-6 mb-2">
+          <span className="text-[11px] font-bold text-text-tertiary uppercase tracking-[0.2em] ml-1">Account & Sync</span>
+        </div>
+        <div className="mx-4 bg-surface/50 rounded-2xl border border-border/50 shadow-sm overflow-hidden">
+          {firebaseUser && appMode === 'cloud' ? (
+            <>
+              {/* User Info */}
+              <div className="flex items-center gap-3 px-5 py-4 border-b border-border/50">
+                {firebaseUser.photoURL ? (
+                  <img src={firebaseUser.photoURL} alt="" className="w-10 h-10 rounded-full border border-border/50" />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-coral/10 flex items-center justify-center">
+                    <User size={18} className="text-coral" />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <span className="text-sm font-bold block truncate">{firebaseUser.displayName || 'User'}</span>
+                  <span className="text-[11px] text-text-tertiary block truncate">{firebaseUser.email}</span>
+                </div>
+                <div className="flex items-center gap-1.5 bg-income/10 px-2.5 py-1 rounded-full">
+                  <Cloud size={12} className="text-income" />
+                  <span className="text-[10px] font-bold text-income uppercase">Cloud</span>
+                </div>
+              </div>
+              {/* Sync Button */}
+              <button
+                onClick={handleSync}
+                disabled={syncing}
+                className="flex items-center w-full px-5 py-4 border-b border-border/50 transition-colors"
+              >
+                <div className="w-10 h-10 rounded-2xl bg-elevated flex items-center justify-center shrink-0 border border-border/50 mr-4 shadow-sm">
+                  <RefreshCw size={18} className={`text-text-primary ${syncing ? 'animate-spin' : ''}`} />
+                </div>
+                <div className="text-left flex-1 min-w-0">
+                  <span className="text-[15px] font-bold block">{syncing ? 'Syncing...' : 'Sync Now'}</span>
+                  {syncMessage && <span className="text-[11px] text-income block">{syncMessage}</span>}
+                </div>
+                <ChevronRight size={20} className="text-text-tertiary shrink-0 ml-2" />
+              </button>
+              {/* Sign Out */}
+              <button
+                onClick={handleSignOut}
+                className="flex items-center w-full px-5 py-4 transition-colors"
+              >
+                <div className="w-10 h-10 rounded-2xl bg-elevated flex items-center justify-center shrink-0 border border-border/50 mr-4 shadow-sm">
+                  <LogOut size={18} className="text-expense" />
+                </div>
+                <div className="text-left flex-1 min-w-0">
+                  <span className="text-[15px] font-bold block text-expense">Sign Out</span>
+                </div>
+              </button>
+            </>
+          ) : (
+            /* Offline Mode — show option to switch to cloud */
+            <button
+              onClick={handleSwitchToCloud}
+              className="flex items-center w-full px-5 py-4 transition-colors"
+            >
+              <div className="w-10 h-10 rounded-2xl bg-elevated flex items-center justify-center shrink-0 border border-border/50 mr-4 shadow-sm">
+                <WifiOff size={18} className="text-text-secondary" />
+              </div>
+              <div className="text-left flex-1 min-w-0">
+                <span className="text-[15px] font-bold block">Offline Mode</span>
+                <span className="text-[11px] text-text-tertiary">Tap to switch to Cloud Sync</span>
+              </div>
+              <ChevronRight size={20} className="text-text-tertiary shrink-0 ml-2" />
+            </button>
+          )}
         </div>
 
         <div className="px-4 mt-8 mb-2">

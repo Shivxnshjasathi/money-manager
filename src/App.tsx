@@ -12,11 +12,14 @@ import Notifications from './pages/Notifications';
 import PrivacySecurity from './pages/PrivacySecurity';
 import Subscriptions from './pages/Subscriptions';
 import SmsImport from './pages/SmsImport';
+import Onboarding from './pages/Onboarding';
 import BottomNav from './components/BottomNav';
 import { seedDatabase, processRecurringTransactions } from './db';
 import { useTheme } from './hooks';
 import './index.css';
 import { isBiometricLockEnabled, unlockWithBiometrics } from './utils/auth';
+import { isOnboarded, isCloudMode, onAuthChange } from './firebase';
+import { fullSync } from './utils/syncService';
 import { Fingerprint, Lock, Loader2 } from 'lucide-react';
 
 import { AnimatePresence } from 'framer-motion';
@@ -67,6 +70,7 @@ function App() {
   const [ready, setReady] = useState(false);
   const [isLocked, setIsLocked] = useState(isBiometricLockEnabled());
   const [unlocking, setUnlocking] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(!isOnboarded());
   const theme = useTheme((state) => state.theme);
 
   const handleUnlock = async () => {
@@ -89,6 +93,20 @@ function App() {
       .then(() => processRecurringTransactions())
       .then(() => setReady(true));
   }, []);
+
+  // Firebase auth listener + initial sync for cloud mode
+  useEffect(() => {
+    if (!isCloudMode()) return;
+
+    const unsubscribe = onAuthChange((user) => {
+      if (user) {
+        // User is signed in — trigger a background sync
+        fullSync().catch(console.error);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [showOnboarding]);;
 
   useEffect(() => {
     const metaThemeColor = document.getElementById('meta-theme-color');
@@ -142,6 +160,13 @@ function App() {
           ))}
         </div>
       </div>
+    );
+  }
+
+  // Show onboarding if not yet chosen
+  if (showOnboarding) {
+    return (
+      <Onboarding onComplete={() => setShowOnboarding(false)} />
     );
   }
 

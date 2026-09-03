@@ -35,11 +35,23 @@ class MoneyDB extends Dexie {
 
     // Version 4: Add attachments, goals, and recurring transactions
     this.version(4).stores({
-      transactions: 'id, type, date, category, accountId, toAccountId, recurringId', // added recurringId for index
-      goals: 'id, name, deadline', // currentAmount, targetAmount etc are not indexed usually unless we need to query by them
+      transactions: 'id, type, date, category, accountId, toAccountId, recurringId',
+      goals: 'id, name, deadline',
       recurring_transactions: 'id, type, categoryId, accountId, frequency, nextRunDate'
     }).upgrade(() => {
       // no data migration needed for added tables
+    });
+
+    // Version 5: Add updatedAt for cloud sync
+    this.version(5).stores({
+      transactions: 'id, type, date, category, accountId, toAccountId, recurringId, updatedAt',
+      accounts: 'id, name, group, updatedAt',
+      categories: 'id, name, type, updatedAt',
+      budgets: 'id, categoryId, yearMonth, updatedAt',
+      goals: 'id, name, deadline, updatedAt',
+      recurring_transactions: 'id, type, categoryId, accountId, frequency, nextRunDate, updatedAt'
+    }).upgrade(() => {
+      // No data migration needed — updatedAt is optional
     });
   }
 }
@@ -131,6 +143,10 @@ export async function processRecurringTransactions() {
 // ── Helper: delete a transaction by id ──
 export async function deleteTransaction(id: string) {
   await db.transactions.delete(id);
+  // Sync deletion to cloud
+  import('./utils/syncService').then(({ deleteFromCloud }) => {
+    deleteFromCloud('transactions', id);
+  }).catch(() => {});
 }
 
 // ── Helper: clear ALL data and re-seed ──
@@ -138,5 +154,43 @@ export async function resetAllData() {
   await db.transactions.clear();
   await db.accounts.clear();
   await db.categories.clear();
+  await db.budgets.clear();
+  await db.goals.clear();
+  await db.recurring_transactions.clear();
   await seedDatabase();
 }
+
+// ── Sync Hooks: Auto-push to cloud on local writes ──
+function setupSyncHooks() {
+  const tables = [
+    { table: db.transactions, collection: 'transactions' },
+    { table: db.accounts, collection: 'accounts' },
+    { table: db.categories, collection: 'categories' },
+    { table: db.budgets, collection: 'budgets' },
+    { table: db.goals, collection: 'goals' },
+    { table: db.recurring_transactions, collection: 'recurring' },
+  ];
+
+  for (const { table, collection } of tables) {
+    // On create
+    table.hook('creating', function (_primKey, obj) {
+      obj.updatedAt = Date.now();
+      // Fire-and-forget cloud push
+      import('./utils/syncService').then(({ pushToCloud }) => {
+        pushToCloud(collection, obj.id, obj);
+      }).catch(() => {});
+    });
+
+    // On update
+    table.hook('updating', function (modifications, _primKey, obj) {
+      const updated = { ...obj, ...modifications, updatedAt: Date.now() };
+      // Fire-and-forget cloud push
+      import('./utils/syncService').then(({ pushToCloud }) => {
+        pushToCloud(collection, updated.id, updated);
+      }).catch(() => {});
+      return { ...modifications, updatedAt: Date.now() };
+    });
+  }
+}
+
+setupSyncHooks();

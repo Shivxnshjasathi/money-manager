@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Sankey, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { PieChart as PieChartIcon, BarChart3 as BarChartIcon } from 'lucide-react';
 import { format, addMonths, subMonths, subDays, eachDayOfInterval } from 'date-fns';
-import { motion, type Variants } from 'framer-motion';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import TopBar from '../components/TopBar';
 import { useTransactions, useCategories, formatINR, useAllTransactions } from '../hooks';
 
@@ -31,6 +31,7 @@ export default function Stats() {
   const [mainTab, setMainTab] = useState('Stats');
   const [subTab, setSubTab] = useState<'Expense' | 'Income'>('Expense');
   const [chartType, setChartType] = useState<'pie' | 'bar'>('pie');
+  const [expandedSuperCategory, setExpandedSuperCategory] = useState<string | null>(null);
 
   const transactions = useTransactions(monthDate);
   const allTx = useAllTransactions();
@@ -407,12 +408,18 @@ export default function Stats() {
             className="p-4 space-y-4"
           >
             {(() => {
-              const scMap: Record<string, number> = { needs: 0, wants: 0, investment: 0, uncategorized: 0 };
+              const scMap: Record<string, { total: number; categories: Record<string, number> }> = { 
+                needs: { total: 0, categories: {} }, 
+                wants: { total: 0, categories: {} }, 
+                investment: { total: 0, categories: {} }, 
+                uncategorized: { total: 0, categories: {} } 
+              };
               let total = 0;
               transactions.forEach(tx => {
                 if (tx.type === 'expense') {
                   const sc = tx.superCategory || 'uncategorized';
-                  scMap[sc] = (scMap[sc] || 0) + tx.amount;
+                  scMap[sc].total += tx.amount;
+                  scMap[sc].categories[tx.category] = (scMap[sc].categories[tx.category] || 0) + tx.amount;
                   total += tx.amount;
                 }
               });
@@ -429,19 +436,26 @@ export default function Stats() {
               };
 
               return Object.entries(scMap)
-                .filter(([_, val]) => val > 0)
-                .sort((a, b) => b[1] - a[1])
-                .map(([key, val], idx) => {
-                  const percent = (val / total) * 100;
+                .filter(([_, data]) => data.total > 0)
+                .sort((a, b) => b[1].total - a[1].total)
+                .map(([key, data], idx) => {
+                  const percent = (data.total / total) * 100;
+                  const isExpanded = expandedSuperCategory === key;
+                  
                   return (
-                    <motion.div key={key} variants={itemVariants} className="bg-surface/50 rounded-2xl p-4 border border-border/50">
+                    <motion.div 
+                      key={key} 
+                      variants={itemVariants} 
+                      className={`bg-surface/50 rounded-2xl p-4 border transition-colors cursor-pointer active:scale-[0.98] ${isExpanded ? 'border-coral/40 shadow-sm' : 'border-border/50 hover:border-border'}`}
+                      onClick={() => setExpandedSuperCategory(isExpanded ? null : key)}
+                    >
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-3">
                           <span className="text-xl">{scIcons[key] || '📦'}</span>
                           <span className="text-[15px] font-medium capitalize">{key}</span>
                         </div>
                         <div className="text-right">
-                          <div className="text-[14px] font-bold text-text-primary">{formatINR(val)}</div>
+                          <div className="text-[14px] font-bold text-text-primary">{formatINR(data.total)}</div>
                           <div className="text-[11px] font-bold text-text-secondary">{percent.toFixed(1)}%</div>
                         </div>
                       </div>
@@ -454,6 +468,42 @@ export default function Stats() {
                           style={{ opacity: getSliceOpacity(idx) }}
                         />
                       </div>
+
+                      {/* Expandable Category Breakdown */}
+                      <AnimatePresence>
+                        {isExpanded && (
+                          <motion.div 
+                            initial={{ height: 0, opacity: 0 }} 
+                            animate={{ height: 'auto', opacity: 1 }} 
+                            exit={{ height: 0, opacity: 0 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="mt-4 space-y-3 border-t border-border/50 pt-4">
+                              {Object.entries(data.categories)
+                                .sort((a, b) => b[1] - a[1])
+                                .map(([catId, amount]) => {
+                                  const catInfo = categories.find(c => c.id === catId);
+                                  const catPercent = (amount / data.total) * 100;
+                                  return (
+                                    <div key={catId} className="flex items-center justify-between group">
+                                      <div className="flex items-center gap-2">
+                                        <div className="w-8 h-8 rounded-full bg-elevated flex items-center justify-center text-sm">
+                                          {catInfo?.icon || '📦'}
+                                        </div>
+                                        <span className="text-[13px] text-text-secondary font-medium">{catInfo?.name || 'Other'}</span>
+                                      </div>
+                                      <div className="text-right flex flex-col">
+                                        <span className="text-[13px] font-bold">{formatINR(amount)}</span>
+                                        <span className="text-[10px] text-text-tertiary">{catPercent.toFixed(1)}%</span>
+                                      </div>
+                                    </div>
+                                  );
+                                })
+                              }
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </motion.div>
                   );
                 });

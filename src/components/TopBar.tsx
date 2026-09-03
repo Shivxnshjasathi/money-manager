@@ -6,7 +6,7 @@ interface TopBarProps {
   title: string;
   onPrev?: () => void;
   onNext?: () => void;
-  stats?: { label: string; value: number; color: string }[];
+  stats?: { label: string; value: number; color: string; onClick?: () => void }[];
   showSearch?: boolean;
   onSearch?: () => void;
   showFilter?: boolean;
@@ -87,7 +87,8 @@ export default function TopBar({
             {stats.map((item) => (
               <div
                 key={item.label}
-                className="flex-1 flex flex-col items-center justify-center bg-surface/50 backdrop-blur-md rounded-2xl py-3 border border-border/50 shadow-sm transition-shadow"
+                onClick={item.onClick}
+                className={`flex-1 flex flex-col items-center justify-center bg-surface/50 backdrop-blur-md rounded-2xl py-3 border border-border/50 shadow-sm transition-shadow ${item.onClick ? 'cursor-pointer active:scale-[0.98]' : ''}`}
               >
                 <span className="text-text-tertiary text-[10px] font-bold uppercase tracking-wider mb-1">{item.label}</span>
                 <span className={`${item.color} font-bold tracking-tight text-[15px]`}>
